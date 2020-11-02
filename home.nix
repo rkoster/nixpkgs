@@ -31,13 +31,21 @@
     terminal = "screen-256color";
   };
 
-  # This value determines the Home Manager release that your
-  # configuration is compatible with. This helps avoid breakage
-  # when a new Home Manager release introduces backwards
-  # incompatible changes.
-  #
-  # You can update Home Manager without changing this value. See
-  # the Home Manager release notes for a list of state version
-  # changes in each release.
+  programs.direnv = {
+    enable = true;
+    enableZshIntegration = true;
+    enableNixDirenvIntegration = true;
+  };
+
+  programs.zsh = {
+    enable = true;
+    initExtra = 
+      ''
+        if [ -e "$HOME/.nix-defexpr/channels" ]; then
+          export NIX_PATH="$HOME/.nix-defexpr/channels''${NIX_PATH:+:$NIX_PATH}"
+        fi
+      '';    
+  };
+
   home.stateVersion = "20.09";
 }
