@@ -16,6 +16,7 @@
   home.packages = with pkgs; [
     jq
     zsh-powerlevel10k
+    gcc                  # needed for emacs-nix-mode (otherwise triggers osx developer tools promt)
   ];
 
   programs.git = {
@@ -31,6 +32,8 @@
       epkgs.magit
       epkgs.go-mode
       epkgs.go-guru
+      epkgs.nix-mode
+      epkgs.nixpkgs-fmt
     ];
   };
 
