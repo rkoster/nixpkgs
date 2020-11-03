@@ -9,7 +9,13 @@
   home.username = "rubenkoster";
   home.homeDirectory = "/Users/rubenkoster";
 
+  imports = [
+    ./program/zsh/sources.nix
+  ];
+
   home.packages = with pkgs; [
+    jq
+    zsh-powerlevel10k
   ];
 
   programs.git = {
@@ -21,6 +27,11 @@
   programs.emacs = {
     enable = true;
     package = pkgs.emacs26-nox;
+    extraPackages = epkgs: [
+      epkgs.magit
+      epkgs.go-mode
+      epkgs.go-guru
+    ];
   };
 
   programs.tmux = {
@@ -37,15 +48,7 @@
     enableNixDirenvIntegration = true;
   };
 
-  programs.zsh = {
-    enable = true;
-    initExtra = 
-      ''
-        if [ -e "$HOME/.nix-defexpr/channels" ]; then
-          export NIX_PATH="$HOME/.nix-defexpr/channels''${NIX_PATH:+:$NIX_PATH}"
-        fi
-      '';    
-  };
+  programs.zsh = import ./program/zsh/default.nix { config = config; };
 
   home.stateVersion = "20.09";
 }
