@@ -39,6 +39,8 @@
       epkgs.nixpkgs-fmt
       epkgs.yaml-mode
       epkgs.flycheck-yamllint
+      epkgs.gruvbox-theme
+      epkgs.powerline
     ];
   };
 
