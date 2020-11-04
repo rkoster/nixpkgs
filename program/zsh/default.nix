@@ -4,13 +4,13 @@
   enable = true;
   prezto = {
     enable = true;
-    pmodules = [
-      "prompt"
-    ];
+    pmodules = [ "prompt" ];
     prompt.theme = "powerlevel10k";
   };
   initExtra =
     ''
+    export XDG_CONFIG_HOME=${config.xdg.configHome}
+
     if [ -e "$HOME/.nix-defexpr/channels" ]; then
       export NIX_PATH="$HOME/.nix-defexpr/channels''${NIX_PATH:+:$NIX_PATH}"
     fi
@@ -22,7 +22,6 @@
       source "''${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-''${(%):-%n}.zsh"
     fi
 
-    # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
-    source ${config.xdg.configHome}/zsh/p10k.zsh
+    source ''${XDG_CONFIG_HOME}/zsh/p10k.zsh
     '';
 }

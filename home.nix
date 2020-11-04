@@ -11,12 +11,15 @@
 
   imports = [
     ./program/zsh/sources.nix
+    ./program/emacs/sources.nix
   ];
 
   home.packages = with pkgs; [
     jq
+    lnav
     zsh-powerlevel10k
-    gcc                  # needed for emacs-nix-mode (otherwise triggers osx developer tools promt)
+    # needed for emacs-nix-mode (otherwise triggers osx developer tools promt)
+    gcc                  
   ];
 
   programs.git = {
@@ -27,13 +30,15 @@
 
   programs.emacs = {
     enable = true;
-    package = pkgs.emacs26-nox;
+    package = pkgs.emacs-nox;
     extraPackages = epkgs: [
       epkgs.magit
       epkgs.go-mode
       epkgs.go-guru
       epkgs.nix-mode
       epkgs.nixpkgs-fmt
+      epkgs.yaml-mode
+      epkgs.flycheck-yamllint
     ];
   };
 
