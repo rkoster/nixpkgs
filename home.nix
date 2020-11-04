@@ -17,6 +17,7 @@
   home.packages = with pkgs; [
     jq
     lnav
+    tree
     zsh-powerlevel10k
     # needed for emacs-nix-mode (otherwise triggers osx developer tools promt)
     gcc                  
