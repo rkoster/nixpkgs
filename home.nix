@@ -1,6 +1,7 @@
 { config, pkgs, ... }:
 
-{
+let customPkgs = import ./custom-packages.nix { pkgs = pkgs; };
+in {
   # Let Home Manager install and manage itself.
   programs.home-manager.enable = true;
 
@@ -14,13 +15,15 @@
     ./program/emacs/sources.nix
   ];
 
-  home.packages = with pkgs; [
-    jq
-    lnav
-    tree
-    zsh-powerlevel10k
+  home.packages = [
+    pkgs.jq
+    pkgs.lnav
+    pkgs.tree
+    pkgs.zsh-powerlevel10k
     # needed for emacs-nix-mode (otherwise triggers osx developer tools promt)
-    gcc                  
+    pkgs.gcc
+    pkgs.dasht
+    customPkgs.ssoca
   ];
 
   programs.git = {
