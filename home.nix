@@ -23,6 +23,8 @@ in {
     # needed for emacs-nix-mode (otherwise triggers osx developer tools promt)
     pkgs.gcc
     pkgs.dasht
+    pkgs.fly
+    pkgs.lastpass-cli
     customPkgs.ssoca
     customPkgs.leftovers
   ];
