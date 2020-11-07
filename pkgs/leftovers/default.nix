@@ -26,6 +26,6 @@ buildGoModule rec {
     description = "Go cli & library for cleaning up orphaned IAAS resources.";
     homepage = "https://github.com/genevieve/leftovers";
     license = licenses.asl20;
-    maintainers = [ rkoster ];
+    maintainers = with maintainers; [ rkoster ];
   };
 }

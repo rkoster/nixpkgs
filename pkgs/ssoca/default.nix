@@ -1,6 +1,6 @@
-{ stdenv, fetchFromGitHub, git, go }:
+{ buildGoModule, fetchFromGitHub, stdenv, lib, writeText }:
 
-stdenv.mkDerivation {
+buildGoModule rec {  
   name = "ssoca";
   version = "0.19.2";
 
@@ -11,28 +11,23 @@ stdenv.mkDerivation {
     sha256 = "1yhacjf41j3vmvl5ns5a6lb4bz74mb2y189qki29aw3dddl5nrhx";
   };
 
-  buildInputs = [
-    go
-  ];
+  vendorSha256 = null;
 
-  buildPhase = ''
-    export GOCACHE="$TMPDIR/go-cache"
-    export GOPATH="$TMPDIR/go"
-    go build -mod=vendor \
-        -ldflags "
-          -X main.appSemver=0.19.2 \
-        " \
-        -o $GOPATH/bin/ssoca \
-        cli/client/client.go
+  doCheck = false;
+
+  subPackages = [ "cli/client" ];
+
+  buildFlagsArray = ''
+    -ldflags=
+      -X main.appSemver=v${version}"
   '';
 
-  installPhase = ''
-    mkdir -p $out
-    dir="$GOPATH/bin"
-    cp -r $dir $out
-  '';
+  postBuild = ''
+     cd "$GOPATH/bin"
+     mv client ssoca
+  ''; 
 
-  meta = with stdenv.lib; {
+  meta = with lib; {
     homepage = "https://github.com/dpb587/ssoca";
     description = "SSO for services that use CA-based authentication.";
     license = licenses.mit;
