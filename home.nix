@@ -33,6 +33,7 @@ in {
     enable = true;
     userName  = "rkoster";
     userEmail = "rkoster@starkandwayne.com";
+    extraConfig = { credential = { helper = "osxkeychain"; } ; } ;
   };
 
   programs.emacs = {
