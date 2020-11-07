@@ -5,6 +5,7 @@ let
   
   self = {
     ssoca = callPackage ./pkgs/ssoca { };
+    leftovers = callPackage ./pkgs/leftovers { };
   };
 in
 self

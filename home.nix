@@ -24,6 +24,7 @@ in {
     pkgs.gcc
     pkgs.dasht
     customPkgs.ssoca
+    customPkgs.leftovers
   ];
 
   programs.git = {
