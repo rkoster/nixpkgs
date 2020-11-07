@@ -6,4 +6,4 @@
 
 (require 'powerline)
 (powerline-default-theme)
-
+(require 'powerline-evil)

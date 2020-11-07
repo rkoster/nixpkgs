@@ -46,6 +46,7 @@ in {
       epkgs.flycheck-yamllint
       epkgs.gruvbox-theme
       epkgs.powerline
+      epkgs.powerline-evil
     ];
   };
 
