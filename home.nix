@@ -25,6 +25,7 @@ in {
     pkgs.dasht
     pkgs.fly
     pkgs.lastpass-cli
+    pkgs.fasd
     customPkgs.ssoca
     customPkgs.leftovers
     customPkgs.bosh
