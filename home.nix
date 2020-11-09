@@ -27,6 +27,7 @@ in {
     pkgs.lastpass-cli
     customPkgs.ssoca
     customPkgs.leftovers
+    customPkgs.bosh
   ];
 
   programs.git = {
