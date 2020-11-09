@@ -58,9 +58,6 @@
 
   # Right prompt segments.
   typeset -g POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(
-    ram
-    swap
-    time   
     newline
   )
 
@@ -75,13 +72,6 @@
   # Colors
   typeset -g POWERLEVEL9K_RAM_FOREGROUND=$grey
   typeset -g POWERLEVEL9K_SWAP_FOREGROUND=$grey
-
-  # Icons
-  typeset -g POWERLEVEL9K_TIME_ICON=''
-  typeset -g POWERLEVEL9K_SWAP_ICON=$'\u26A0'
-  typeset -g POWERLEVEL9K_RAM_ICON=''
-
-
 
   # Add an empty line before each prompt except the first. This doesn't emulate the bug
   # in Pure that makes prompt drift down whenever you use the Alt-C binding from fzf or similar.
