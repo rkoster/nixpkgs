@@ -38,30 +38,6 @@ in {
     extraConfig = { credential = { helper = "osxkeychain"; } ; } ;
   };
 
-  programs.emacs = {
-    enable = true;
-    package = pkgs.emacs-nox;
-    extraPackages = epkgs: [
-      epkgs.magit
-      epkgs.go-mode
-      epkgs.go-guru
-      epkgs.nix-mode
-      epkgs.nixpkgs-fmt
-      epkgs.yaml-mode
-      epkgs.flycheck-yamllint
-      epkgs.gruvbox-theme
-      epkgs.powerline
-      epkgs.powerline-evil
-    ];
-  };
-
-  programs.tmux = {
-    enable = true; 
-    keyMode = "emacs";
-    clock24 = true;
-    historyLimit = 5000;
-    terminal = "screen-256color";
-  };
 
   programs.direnv = {
     enable = true;
@@ -70,6 +46,8 @@ in {
   };
 
   programs.zsh = import ./program/zsh/default.nix { config = config; };
+  programs.emacs = import ./program/emacs/default.nix { pkgs = pkgs; };
+  programs.tmux = import ./program/tmux/default.nix { pkgs = pkgs; };
 
   home.stateVersion = "20.09";
 }
