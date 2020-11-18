@@ -29,6 +29,9 @@ in {
     customPkgs.ssoca
     customPkgs.leftovers
     customPkgs.bosh
+    customPkgs.boshBootloader
+    customPkgs.ytt
+    customPkgs.cf
   ];
 
   programs.git = {

@@ -8,7 +8,8 @@ let
     leftovers = callPackage ./pkgs/leftovers { };
     bosh = callPackage ./pkgs/bosh { };
     boshBootloader = callPackage ./pkgs/bosh-bootloader { };
-    ytt = callPackage ./pkgs/ytt { };        
+    ytt = callPackage ./pkgs/ytt { };
+    cf = callPackage ./pkgs/cf { };            
   };
 in
 self
