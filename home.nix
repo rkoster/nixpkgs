@@ -26,6 +26,8 @@ in {
     pkgs.fly
     pkgs.lastpass-cli
     pkgs.fasd
+    pkgs.vault
+
     customPkgs.ssoca
     customPkgs.leftovers
     customPkgs.bosh
@@ -33,7 +35,8 @@ in {
     customPkgs.ytt
     customPkgs.cf
     customPkgs.spruce
-    customPkgs.safe        
+    customPkgs.safe
+    customPkgs.genesis
   ];
 
   programs.git = {

@@ -11,7 +11,8 @@ let
     ytt = callPackage ./pkgs/ytt { };
     cf = callPackage ./pkgs/cf { };
     spruce = callPackage ./pkgs/spruce { };
-    safe = callPackage ./pkgs/safe { };                    
+    safe = callPackage ./pkgs/safe { };
+    genesis = callPackage ./pkgs/genesis { };                        
   };
 in
 self
