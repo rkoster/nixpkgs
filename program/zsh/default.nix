@@ -12,7 +12,7 @@
       "completion"
       "history"
     ];
-    prompt.theme = "powerlevel10k";
+    prompt.theme = null;
   };
   initExtra =
     ''
@@ -22,10 +22,7 @@
       export NIX_PATH="$HOME/.nix-defexpr/channels''${NIX_PATH:+:$NIX_PATH}"
     fi
 
-    if [[ -r "''${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-''${(%):-%n}.zsh" ]]; then
-      source "''${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-''${(%):-%n}.zsh"
-    fi
-
-    source ''${XDG_CONFIG_HOME}/zsh/p10k.zsh
+    zstyle ':prezto:environment:language' all 'en_US.UTF-8'
+    zstyle -s ':prezto: environment:language' all 'LC_ALL'
     '';
 }

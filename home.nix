@@ -19,7 +19,6 @@ in {
     pkgs.jq
     pkgs.lnav
     pkgs.tree
-    pkgs.zsh-powerlevel10k
     # needed for emacs-nix-mode (otherwise triggers osx developer tools promt)
     pkgs.gcc
     pkgs.dasht
@@ -55,6 +54,24 @@ in {
     enableNixDirenvIntegration = true;
   };
 
+  programs.starship = {
+    enable = true;
+    enableZshIntegration = true;
+    settings = {
+      add_newline = true;
+      scan_timeout = 10;      
+      format = "$directory$git_branch$line_break$character";    
+      character = {
+        success_symbol = "[❯](bold #d33682)";
+        error_symbol = "[❯](bold #d33682)";        
+      };
+      directory.style	 = "bold #268bd2";
+      git_branch = {
+        format = "[$branch*]($style) ";
+        style = "#839496";
+      };
+    };
+  };
   programs.zsh = import ./program/zsh/default.nix { config = config; };
   programs.emacs = import ./program/emacs/default.nix { pkgs = pkgs; };
   programs.tmux = import ./program/tmux/default.nix { pkgs = pkgs; };
