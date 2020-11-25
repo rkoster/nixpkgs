@@ -10,7 +10,8 @@ let
     boshBootloader = callPackage ./pkgs/bosh-bootloader { };
     ytt = callPackage ./pkgs/ytt { };
     cf = callPackage ./pkgs/cf { };
-    spruce = callPackage ./pkgs/spruce { };                
+    spruce = callPackage ./pkgs/spruce { };
+    safe = callPackage ./pkgs/safe { };                    
   };
 in
 self

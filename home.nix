@@ -32,7 +32,8 @@ in {
     customPkgs.boshBootloader
     customPkgs.ytt
     customPkgs.cf
-    customPkgs.spruce    
+    customPkgs.spruce
+    customPkgs.safe        
   ];
 
   programs.git = {
