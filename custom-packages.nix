@@ -9,6 +9,7 @@ let
     bosh = callPackage ./pkgs/bosh { };
     boshBootloader = callPackage ./pkgs/bosh-bootloader { };
     ytt = callPackage ./pkgs/ytt { };
+    vendir = callPackage ./pkgs/vendir { };    
     cf = callPackage ./pkgs/cf { };
     spruce = callPackage ./pkgs/spruce { };
     safe = callPackage ./pkgs/safe { };
