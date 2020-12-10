@@ -1,8 +1,11 @@
 ;; Keybindings
 ;; (global-set-key (kbd "C-x g") 'magit-status)
 
+;; (server-start)
+
 ;; Theme
 (load-theme 'gruvbox-dark-medium t)
+(setq make-backup-files nil)
 
 (use-package powerline
   :config
@@ -27,7 +30,8 @@
 ;; (add-hook 'window-configuration-change-hook 'my-change-window-divider)
 
 (use-package whitespace-cleanup-mode
-  :hook (go-mode whitespace-cleanup-mode))
+  :config
+  (global-whitespace-cleanup-mode))
 
 (use-package lsp-mode
   :ensure t
@@ -64,3 +68,11 @@
 (use-package which-key
   :config  
   (which-key-mode))
+
+(use-package dockerfile-mode
+  :mode "Dockerfile\\'"
+  :interpreter "docker")  
+
+(use-package yaml-mode
+  :ensure t
+  :mode ("\\.ya?ml\\'" . yaml-mode))

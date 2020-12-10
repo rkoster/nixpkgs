@@ -25,13 +25,8 @@ buildGoModule rec {
 
   buildFlagsArray = ''
     -ldflags=
-    -X main.Version==${version}
+    -X main.Version=${version}
   '';
-
-  # postBuild = ''
-  #    cd "$GOPATH/bin"
-  #    mv cli cf
-  # ''; 
 
   meta = with lib; {
     description = "A BOSH template merge tool";

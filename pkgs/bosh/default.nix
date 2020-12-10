@@ -17,7 +17,7 @@ buildGoModule rec {
 
   preBuild = ''
     go mod init github.com/cloudfoundry/bosh-cli
-    sed 's/\[DEV BUILD\]/'"${version}"'/' cmd/version.go > cmd/version.tmp && mv cmd/version{.tmp,.go}
+    sed 's/\[DEV BUILD\]/'"${version}-nix"'/' cmd/version.go > cmd/version.tmp && mv cmd/version{.tmp,.go}
   '';
 
   subPackages = [ "main.go" ];

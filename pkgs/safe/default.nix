@@ -19,7 +19,7 @@ buildGoModule rec {
 
   buildFlagsArray = ''
     -ldflags=
-    -X main.Version==${version}
+    -X main.Version=${version}
   '';
 
   meta = with lib; {
