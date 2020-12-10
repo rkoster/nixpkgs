@@ -57,7 +57,10 @@ in {
     enable = true;
     userName  = "rkoster";
     userEmail = "rkoster@starkandwayne.com";
-    extraConfig = { credential = { helper = "osxkeychain"; } ; } ;
+    extraConfig = {
+      credential = { helper = "osxkeychain"; };
+      pull = { rebase = true; };
+    };
     ignores = [ "*~" ];
     lfs.enable = true;
   };
