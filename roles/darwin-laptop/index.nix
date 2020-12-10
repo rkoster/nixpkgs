@@ -8,7 +8,7 @@ in {
 
   imports = [
 #    ./program/zsh/sources.nix
-    ../../program/emacs/sources.nix
+    ../../programs/emacs/sources.nix
   ];
 
   home.language = {
@@ -25,6 +25,7 @@ in {
     pkgs.openssh
     pkgs.watch
     pkgs.wget
+    pkgs.hack-font
 
     # needed for emacs-nix-mode (otherwise triggers osx developer tools promt)
     pkgs.gcc
@@ -155,16 +156,24 @@ in {
     enable = true;
   };
 
+  programs.alacritty = import ../../programs/alacritty/default.nix;
   # programs.alacritty = {
   #   enable = true;
   # };
 
-  programs.zsh = import ../../program/zsh/default.nix { config = config; pkgs = pkgs; };
-  programs.emacs = import ../../program/emacs/default.nix { pkgs = pkgs; };
-  programs.tmux = import ../../program/tmux/default.nix { pkgs = pkgs; };
+  programs.zsh = import ../../programs/zsh/default.nix { config = config; pkgs = pkgs; };
+  programs.emacs = import ../../programs/emacs/default.nix { pkgs = pkgs; };
+  programs.tmux = import ../../programs/tmux/default.nix { pkgs = pkgs; };
 
   #  services.caffeine.enable = true;
   # services.emacs.enable = true;
 
   home.stateVersion = "21.03";
+
+  home.file = {
+    hackRegular = {
+      source = ~/.nix-profile/share/fonts/hack/Hack-Regular.ttf;
+      target = "Library/Fonts/Hack Regular.tff";
+    };
+  };
 }
