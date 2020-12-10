@@ -19,7 +19,7 @@ Install git
 ```
 nix-channel --add https://nixos.org/channels/nixpkgs-unstable nixpkgs
 nix-channel --update
-nix-env -iA nixpkgs.gitMinimal
+nix-env -i git
 export PATH=$PATH:$HOME/.nix-profile/bin
 ```
 
@@ -31,5 +31,6 @@ git clone https://github.com/rkoster/nixpkgs
 
 Switch
 ```
+nix-env -e git
 home-manager switch
 ```
