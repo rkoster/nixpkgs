@@ -2,7 +2,7 @@
 Home Manager config
 
 Install Nix
-````
+```
 sh <(curl -L https://nixos.org/nix/install) --daemon --darwin-use-unencrypted-nix-store-volume
 source ~/.zshrc
 ```
@@ -24,11 +24,12 @@ export PATH=$PATH:$HOME/.nix-profile/bin
 ```
 
 Clone config
-````
+```
 cd ~/.config && rm -r nixpkgs
 git clone https://github.com/rkoster/nixpkgs
 ```
 
 Switch
-````
+```
 home-manager switch
+```
