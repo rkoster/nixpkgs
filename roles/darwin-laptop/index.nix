@@ -1,7 +1,6 @@
 { config, pkgs, ... }:
 
-let customPkgs = import ../../custom-packages.nix { pkgs = pkgs; };
-in {
+{
   # Let Home Manager install and manage itself.
   programs.home-manager.enable = true;
 
@@ -16,42 +15,42 @@ in {
     base = "en_US.UTF-8";
   };
 
-  home.packages = [
-    pkgs.jq
-    pkgs.lnav
-    pkgs.tree
-    pkgs.pwgen
-    pkgs.ipcalc
-    pkgs.openssh
-    pkgs.watch
-    pkgs.wget
-    pkgs.hack-font
+  home.packages = with pkgs; [
+    jq
+    lnav
+    tree
+    pwgen
+    ipcalc
+    openssh
+    watch
+    wget
+    hack-font
 
     # needed for emacs-nix-mode (otherwise triggers osx developer tools promt)
-    pkgs.gcc
-    pkgs.clang-tools
-    pkgs.dasht
+    gcc
+    clang-tools
+    dasht
 
     # lang server
-    pkgs.gopls
-    pkgs.yaml-language-server
-    pkgs.rnix-lsp
+    gopls
+    yaml-language-server
+    rnix-lsp
 
-    pkgs.fly
-    pkgs.lastpass-cli
-    pkgs.google-cloud-sdk
-    pkgs.vault
+    fly
+    lastpass-cli
+    google-cloud-sdk
+    vault
 
-    customPkgs.ssoca
-    customPkgs.leftovers
-    customPkgs.bosh
-    customPkgs.boshBootloader
-    customPkgs.ytt
-    customPkgs.vendir
-    customPkgs.cf
-    customPkgs.spruce
-    customPkgs.safe
-    customPkgs.genesis
+    ssoca
+    leftovers
+    bosh
+    boshBootloader
+    ytt
+    vendir
+    cf
+    spruce
+    safe
+    genesis
   ];
 
   programs.git = {
