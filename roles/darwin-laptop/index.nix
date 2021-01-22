@@ -147,7 +147,12 @@
     verbs = [
       { name = "line_down"; key = "ctrl-n"; execution = ":line_down" ; }
       { name = "line_up"; key = "ctrl-p"; execution = ":line_up" ; }
-      { invocation = "open"; key = "enter"; execution = "emacsclient --no-wait {file}" ; }
+      {
+        invocation = "open";
+        key = "enter";
+        leave_broot = false;
+        execution = "emacsclient --no-wait {file}";
+      }
     ];
   };
 
