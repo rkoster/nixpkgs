@@ -44,11 +44,6 @@
     '';
 
   sessionVariables = {
-    EMACS_SERVER_FILE = "/private/tmp/emacs/$(tmux display-message -p '#S')-server";
     LC_ALL = "en_US.UTF-8";
-  };
-
-  shellAliases = {
-#    emacs = "emacsclient -f \${EMACS_SERVER_FILE} -a ''";
   };
 }
