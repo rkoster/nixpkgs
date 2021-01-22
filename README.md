@@ -27,6 +27,8 @@ Clone config
 ```
 cd ~/.config && rm -r nixpkgs
 git clone https://github.com/rkoster/nixpkgs
+cd ~/.config/nixpkgs
+cat home.nix.sample | sed "s/USERNAME/$(whoami)/g" > home.nix
 ```
 
 Switch
