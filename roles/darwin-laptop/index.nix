@@ -76,24 +76,6 @@
 #    extraConfig =
   };
 
-  programs.starship = {
-    enable = true;
-    enableZshIntegration = true;
-    settings = {
-      add_newline = true;
-      scan_timeout = 10;
-      format = "$directory$git_branch$line_break$character";
-      character = {
-        success_symbol = "[❯](bold #d33682)";
-        error_symbol = "[❯](bold #d33682)";
-      };
-      directory.style	 = "bold #268bd2";
-      git_branch = {
-        format = "[$branch*]($style) ";
-        style = "#839496";
-      };
-    };
-  };
 
 #   programs.fzf = {
 #     enable = true;
@@ -123,46 +105,13 @@
     keyScheme = "emacs";
   };
 
-  programs.broot = {
-    enable = true;
-    enableZshIntegration = true;
-    skin = {
-      # status_normal_fg = "grayscale(18)";
-      # status_normal_bg = "grayscale(3)";
-      # status_error_fg = "red";
-      # status_error_bg = "yellow";
-      # tree_fg = "red";
-      # selected_line_bg = "grayscale(7)";
-      # permissions_fg = "grayscale(12)";
-      # size_bar_full_bg = "red";
-      # size_bar_void_bg = "black";
-      # directory_fg = "lightyellow";
-      # input_fg = "cyan";
-      # flag_value_fg = "lightyellow";
-      # table_border_fg = "red";
-      # code_fg = "lightyellow";
-    };
-    verbs = [
-      { name = "line_down"; key = "ctrl-n"; execution = ":line_down" ; }
-      { name = "line_up"; key = "ctrl-p"; execution = ":line_up" ; }
-      {
-        invocation = "open";
-        key = "enter";
-        leave_broot = false;
-        execution = "emacsclient --no-wait {file}";
-      }
-    ];
-  };
-
   programs.noti = {
     enable = true;
   };
 
+  programs.starship = import ../../programs/starship/default.nix;
+  programs.broot = import ../../programs/broot/default.nix;
   programs.alacritty = import ../../programs/alacritty/default.nix;
-  # programs.alacritty = {
-  #   enable = true;
-  # };
-
   programs.zsh = import ../../programs/zsh/default.nix { config = config; pkgs = pkgs; };
   programs.emacs = import ../../programs/emacs/default.nix { pkgs = pkgs; };
   programs.tmux = import ../../programs/tmux/default.nix { pkgs = pkgs; };
