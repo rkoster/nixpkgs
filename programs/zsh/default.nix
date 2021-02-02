@@ -54,7 +54,9 @@
   shellAliases = {
     emacs = "emacsclient -a '' -nw";
     es = "lsof $(ls /private/tmp/emacs-*)";
+    ek = "lsof \$EMACS_SOCKET_NAME | tail -n1 | awk '{print $2}' | xargs kill -9";
     e = "emacsclient --no-wait \${@}";
     brw = "br ~/workspace";
+
   };
 }
