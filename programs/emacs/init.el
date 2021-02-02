@@ -61,6 +61,13 @@
   (setq company-idle-delay 0)
   (setq company-minimum-prefix-length 1))
 
+;; direnv
+(use-package direnv
+  :init
+  (add-hook 'prog-mode-hook #'direnv-update-environment)
+  :config
+  (direnv-mode))
+
 (use-package projectile
   :config
   (projectile-mode +1))
