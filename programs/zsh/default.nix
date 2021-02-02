@@ -55,5 +55,6 @@
     emacs = "emacsclient -a '' -nw";
     es = "lsof $(ls /private/tmp/emacs-*)";
     e = "emacsclient --no-wait \${@}";
+    brw = "br ~/workspace";
   };
 }
