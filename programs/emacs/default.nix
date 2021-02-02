@@ -13,6 +13,7 @@
     epkgs.which-key
     epkgs.projectile
     epkgs.whitespace-cleanup-mode
+    epkgs.direnv
     
     # lang
     epkgs.lsp-mode
