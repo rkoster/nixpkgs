@@ -41,8 +41,11 @@
     if [ -e "$HOME/.nix-defexpr/channels" ]; then
       export NIX_PATH="$HOME/.nix-defexpr/channels''${NIX_PATH:+:$NIX_PATH}"
     fi
-    '';
 
+    # Workaround till https://github.com/LnL7/nix-darwin/issues/158 is fixed
+    export NIX_PATH="darwin-config=$HOME/.config/nixpkgs/darwin-configuration.nix:nixpkgs-overlays=$HOME/.config/nixpkgs/overlays:/nix/var/nix/profiles/per-user/root/channels''${NIX_PATH:+:$NIX_PATH}"
+    '';
+  
   sessionVariables = {
     EMACS_SOCKET_NAME = "/private/tmp/emacs/$(tmux display-message -p '#S')-server";
     LC_ALL = "en_US.UTF-8";

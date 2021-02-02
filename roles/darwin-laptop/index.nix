@@ -1,9 +1,8 @@
 { config, pkgs, ... }:
 
 {
-  # Let Home Manager install and manage itself.
-  programs.home-manager.enable = true;
-
+  home.username = config.home.username;
+  home.homeDirectory = config.home.homeDirectory;
 
   imports = [
 #    ./program/zsh/sources.nix
@@ -36,7 +35,6 @@
     yaml-language-server
     rnix-lsp
 
-    fly
     lastpass-cli
     google-cloud-sdk
     vault
@@ -173,11 +171,4 @@
   # services.emacs.enable = true;
 
   home.stateVersion = "21.03";
-
-  home.file = {
-    hackRegular = {
-      source = ~/.nix-profile/share/fonts/hack/Hack-Regular.ttf;
-      target = "Library/Fonts/Hack Regular.tff";
-    };
-  };
 }
