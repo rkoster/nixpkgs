@@ -47,11 +47,13 @@
     '';
   
   sessionVariables = {
-    EMACS_SOCKET_NAME = "/private/tmp/emacs/$(tmux display-message -p '#S')-server";
+    EMACS_SOCKET_NAME = "/private/tmp/emacs-$(tmux display-message -p '#S')-server";
     LC_ALL = "en_US.UTF-8";
   };
 
   shellAliases = {
     emacs = "emacsclient -a '' -nw";
+    es = "lsof $(ls /private/tmp/emacs-*)";
+    e = "emacsclient --no-wait \${@}";
   };
 }
