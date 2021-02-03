@@ -25,8 +25,7 @@
     wget
     hack-font
 
-    # needed for emacs-nix-mode (otherwise triggers osx developer tools promt)
-    gcc
+    gcc # needed for emacs-nix-mode (otherwise triggers osx developer tools promt)
     clang-tools
     dasht
 

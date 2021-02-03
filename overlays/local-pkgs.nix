@@ -11,4 +11,5 @@ self: super:
   spruce = super.callPackage ../pkgs/spruce { };
   safe = super.callPackage ../pkgs/safe { };
   genesis = super.callPackage ../pkgs/genesis { };
+  credhub = super.callPackage ../pkgs/credhub { };
 }
