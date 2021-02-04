@@ -57,6 +57,7 @@
     extraConfig = {
       credential = { helper = "osxkeychain"; };
       pull = { rebase = true; };
+      init = { defaultBranch = "main"; };
     };
     ignores = [ "*~" ];
     lfs.enable = true;
