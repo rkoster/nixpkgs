@@ -14,7 +14,10 @@
       italic.family = "Hack";
     };
 
-    cursor.style = "Beam";
+    cursor = {
+      style = "Block";
+      thickness = 1.0;
+    };
 
     selection = {
       semantic_escape_chars = ",│`|:\"' ()[]{}<>\t";
@@ -24,6 +27,11 @@
     # Colors (Gruvbox dark)
     colors = {
       # Default colors
+      cursor = {
+        text = "0x000000";
+        cursor = "0xffffff";
+      };
+
       primary = {
         # hard contrast: background = '#1d2021'
         background = "#282828";
