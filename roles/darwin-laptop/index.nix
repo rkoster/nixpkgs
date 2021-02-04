@@ -23,7 +23,6 @@
     openssh
     watch
     wget
-    hack-font
 
     gcc # needed for emacs-nix-mode (otherwise triggers osx developer tools promt)
     clang-tools
@@ -36,6 +35,7 @@
 
     lastpass-cli
     google-cloud-sdk
+    terraformer
     vault
 
     ssoca
