@@ -48,6 +48,7 @@
     spruce
     safe
     genesis
+    gojson
   ];
 
   programs.git = {

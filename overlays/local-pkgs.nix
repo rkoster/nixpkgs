@@ -12,4 +12,5 @@ self: super:
   safe = super.callPackage ../pkgs/safe { };
   genesis = super.callPackage ../pkgs/genesis { };
   credhub = super.callPackage ../pkgs/credhub { };
+  gojson = super.callPackage ../pkgs/gojson { };
 }
