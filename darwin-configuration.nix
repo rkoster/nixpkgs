@@ -18,6 +18,8 @@ in {
     gc.automatic = true;
   };
 
+  users.nix.configureBuildUsers = true;
+
   nixpkgs.overlays =
     let path = ./overlays; in with builtins;
           map (n: import (path + ("/" + n)))
