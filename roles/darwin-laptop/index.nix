@@ -30,6 +30,7 @@
 
     # lang server
     gopls
+    godef
     yaml-language-server
     rnix-lsp
 

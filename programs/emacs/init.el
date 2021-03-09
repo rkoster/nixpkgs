@@ -38,6 +38,11 @@
   :commands (lsp lsp-deferred)
   :hook (go-mode . lsp-deferred))
 
+(use-package go-mode
+  :init
+  (add-hook 'go-mode-hook
+            (lambda ()
+              (setq tab-width 2))))
 
 ;; Set up before-save hooks to format buffer and add/delete imports.
 ;; Make sure you don't have other gofmt/goimports hooks enabled.
