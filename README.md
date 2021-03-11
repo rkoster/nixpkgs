@@ -22,6 +22,12 @@ nix-env -i git
 export PATH=$PATH:$HOME/.nix-profile/bin
 ```
 
+Clone config
+```
+cd ~/.config && rm -r nixpkgs
+git clone https://github.com/rkoster/nixpkgs
+```
+
 Install nix-darwin
 ```
 export NIX_PATH="$NIX_PATH:darwin-config=$HOME/.config/nixpkgs/darwin-configuration.nix"
