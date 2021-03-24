@@ -35,6 +35,7 @@
     rnix-lsp
 
     lastpass-cli
+    _1password
     google-cloud-sdk
     terraformer
     vault

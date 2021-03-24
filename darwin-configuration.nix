@@ -26,6 +26,8 @@ in {
             (filter (n: match ".*\\.nix" n != null )
               (attrNames (readDir path)));
 
+  nixpkgs.config.allowUnfree = true;
+
   imports = [ ./home.nix ];
 
   fonts = {
