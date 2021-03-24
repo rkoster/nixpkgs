@@ -56,7 +56,7 @@
   programs.git = {
     enable = true;
     userName  = "rkoster";
-    userEmail = "rkoster@starkandwayne.com";
+    userEmail = "hi@rkoster.dev";
     extraConfig = {
       credential = { helper = "osxkeychain"; };
       pull = { rebase = true; };
