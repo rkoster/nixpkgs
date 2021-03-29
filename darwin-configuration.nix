@@ -55,6 +55,7 @@ in {
     commands = [
       "/run/current-system/sw/bin/darwin-rebuild"
       "/run/current-system/sw/bin/nix*"
+      "/nix/var/nix/profiles/default/bin/nix*"
       "/run/current-system/sw/bin/ln"
       "/nix/store/*/activate"
       "/bin/launchctl"
