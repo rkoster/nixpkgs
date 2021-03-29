@@ -57,6 +57,6 @@
     ek = "lsof -w \$EMACS_SOCKET_NAME | tail -n1 | awk '{print $2}' | xargs kill -9";
     e = "emacsclient --no-wait \${@}";
     brw = "br ~/workspace";
-    nix-update = "sudo nix-channel --update; source ~/.zshrc; nix-channel --update; darwin-rebuild switch; source ~/.zshrc";
+    nix-update = "sudo -H nix-channel --update; source ~/.zshrc; nix-channel --update; darwin-rebuild switch; source ~/.zshrc";
   };
 }
