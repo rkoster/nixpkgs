@@ -39,6 +39,7 @@
     google-cloud-sdk
     terraformer
     vault
+    nodePackages.snyk
 
     ssoca
     leftovers
