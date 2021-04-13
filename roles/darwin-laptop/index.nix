@@ -33,6 +33,8 @@
     godef
     yaml-language-server
     rnix-lsp
+    manix_master
+    fzf
 
     lastpass-cli
     _1password

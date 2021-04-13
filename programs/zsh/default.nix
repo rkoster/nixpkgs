@@ -58,5 +58,6 @@
     e = "emacsclient --no-wait \${@}";
     brw = "br ~/workspace";
     nix-update = "sudo -H nix-channel --update; source ~/.zshrc; nix-channel --update; darwin-rebuild switch; source ~/.zshrc";
+    nix-doc = "manix --source 'hm_options,nixpkgs_doc,nixpkgs_tree,nixpkgs_comments' '' | grep '^# ' | sed 's/^# \(.*\) (.*/\1/;s/ (.*//;s/^# //' | fzf --preview=\"manix --source 'hm_options,nixpkgs_doc,nixpkgs_tree,nixpkgs_comments' '{}'\" | xargs  manix --source 'hm_options,nixpkgs_doc,nixpkgs_tree,nixpkgs_comments'";
   };
 }
