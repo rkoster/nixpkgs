@@ -13,4 +13,5 @@ self: super:
   genesis = super.callPackage ../pkgs/genesis { };
   credhub = super.callPackage ../pkgs/credhub { };
   gojson = super.callPackage ../pkgs/gojson { };
+  gh = super.callPackage ../pkgs/gh { };
 }
