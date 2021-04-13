@@ -26,33 +26,22 @@
 
     gcc # needed for emacs-nix-mode (otherwise triggers osx developer tools promt)
     clang-tools
-    dasht
 
     # lang server
     gopls
     godef
     yaml-language-server
     rnix-lsp
+
+    # nix
     manix_master
-    fzf
 
-    lastpass-cli
     _1password
-    google-cloud-sdk
-    terraformer
-    vault
 
-    ssoca
-    leftovers
     bosh
-    boshBootloader
     ytt
-    vendir
     cf
     spruce
-    safe
-    genesis
-    gojson
   ];
 
   programs.git = {
@@ -78,31 +67,17 @@
     enable = true;
     compression = true;
     forwardAgent = false;
-#    extraConfig =
   };
 
-
-#   programs.fzf = {
-#     enable = true;
-# #    enableZshIntegration = true;
-#   };
-
-#   programs.zoxide = {
-#     enable = true;
-#     enableZshIntegration = true;
-  #   };
-
-#   programs.skim = {
-#     enable = true;
-#     enableZshIntegration = true;
-  #   };
-
+  programs.fzf = {
+    enable = true;
+    enableZshIntegration = true;
+  };
 
   programs.pazi = {
     enable = true;
     enableZshIntegration = true;
   };
-
 
   programs.mcfly = {
     enable = true;
@@ -120,9 +95,6 @@
   programs.zsh = import ../../programs/zsh/default.nix { config = config; pkgs = pkgs; };
   programs.emacs = import ../../programs/emacs/default.nix { pkgs = pkgs; };
   programs.tmux = import ../../programs/tmux/default.nix { pkgs = pkgs; };
-
-  #  services.caffeine.enable = true;
-  # services.emacs.enable = true;
 
   home.stateVersion = "21.03";
 }
