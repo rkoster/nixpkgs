@@ -27,6 +27,7 @@
     epkgs.gruvbox-theme
     epkgs.powerline
     epkgs.powerline-evil
+    epkgs.highlight-parentheses
    ];
 }
 
