@@ -1,7 +1,7 @@
 { which, perl, git, jq, curl, spruce, safe, vault, bosh, fetchFromGitHub, stdenv, lib, writeText }:
 
 let
-  version = "2.7.30";
+  version = "2.7.31";
 in stdenv.mkDerivation {
   name = "genesis";
 
@@ -9,7 +9,7 @@ in stdenv.mkDerivation {
     owner = "genesis-community";
     repo = "genesis";
     rev =  "v${version}";
-    sha256 = "1s8247w4m3qp9wpq7gr1bl2bbp939b908fv1vgkrci9fa8f5qyj8";
+    sha256 = "12bgzrfrh87wrs1n02awi01zm175050zz8ai4rnwvry4fs4r8f5l";
   };
 
   buildInputs = [ which perl git jq curl spruce safe vault bosh ];
