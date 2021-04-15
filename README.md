@@ -24,6 +24,7 @@ export PATH=$PATH:$HOME/.nix-profile/bin
 
 Clone config
 ```
+mkdir -p ~/.config
 cd ~/.config && rm -r nixpkgs
 git clone https://github.com/rkoster/nixpkgs
 ```
