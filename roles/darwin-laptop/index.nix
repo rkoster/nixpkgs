@@ -32,6 +32,7 @@
     godef
     yaml-language-server
     rnix-lsp
+    solargraph
 
     # nix
     manix_master

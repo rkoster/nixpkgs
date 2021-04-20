@@ -41,9 +41,13 @@
   (global-whitespace-cleanup-mode))
 
 (use-package lsp-mode
+  :init
+  (setq lsp-keymap-prefix "C-c l")
   :ensure t
   :commands (lsp lsp-deferred)
-  :hook (go-mode . lsp-deferred))
+  :hook (go-mode . lsp-deferred)
+        (ruby-mode . lsp-deferred)
+        (lsp-mode . lsp-enable-which-key-integration))
 
 (use-package go-mode
   :init
