@@ -35,7 +35,7 @@
     solargraph
 
     # nix
-    manix_master
+    manix
 
     _1password
 
