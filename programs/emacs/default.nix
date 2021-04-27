@@ -14,7 +14,8 @@
     epkgs.projectile
     epkgs.whitespace-cleanup-mode
     epkgs.direnv
-    epkgs.fzf
+    epkgs.helm
+    # epkgs.fzf
     
     # lang
     epkgs.lsp-mode

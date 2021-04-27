@@ -33,8 +33,10 @@
 
 ;; (add-hook 'window-configuration-change-hook 'my-change-window-divider)
 
-(use-package fzf
-  :bind ("C-x C-f" . fzf))
+;; (use-package fzf
+;;   :bind ("C-x C-f" . fzf))
+
+(use-package helm :straight t)
 
 (use-package whitespace-cleanup-mode
   :config
