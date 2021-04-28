@@ -12,4 +12,5 @@ self: super:
   credhub = super.callPackage ../pkgs/credhub { };
   gojson = super.callPackage ../pkgs/gojson { };
   gh = super.callPackage ../pkgs/gh { };
+  runctl = super.callPackage ../pkgs/runctl { };
 }
