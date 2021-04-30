@@ -47,6 +47,7 @@
     '';
   
   sessionVariables = {
+    EDITOR = "emacs";
     EMACS_SOCKET_NAME = "/private/tmp/emacs-$(tmux display-message -p '#S')-server";
     LC_ALL = "en_US.UTF-8";
   };
