@@ -38,6 +38,7 @@
     manix
 
     _1password
+    lastpass-cli
 
     bosh
     ytt
