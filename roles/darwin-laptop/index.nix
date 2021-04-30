@@ -23,6 +23,7 @@
     openssh
     watch
     wget
+    git-duet
 
     gcc # needed for emacs-nix-mode (otherwise triggers osx developer tools promt)
     clang-tools

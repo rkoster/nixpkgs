@@ -4,7 +4,7 @@ self: super:
   ssoca = super.callPackage ../pkgs/ssoca { };
   leftovers = super.callPackage ../pkgs/leftovers { };
   bosh = super.callPackage ../pkgs/bosh { };
-  boshBootloader = super.callPackage ../pkgs/bosh-bootloader { };
+  bosh-bootloader = super.callPackage ../pkgs/bosh-bootloader { };
   cf = super.callPackage ../pkgs/cf { };
   spruce = super.callPackage ../pkgs/spruce { };
   safe = super.callPackage ../pkgs/safe { };
@@ -13,4 +13,5 @@ self: super:
   gojson = super.callPackage ../pkgs/gojson { };
   gh = super.callPackage ../pkgs/gh { };
   runctl = super.callPackage ../pkgs/runctl { };
+  git-duet = super.callPackage ../pkgs/git-duet { };
 }
