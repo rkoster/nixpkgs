@@ -5,7 +5,7 @@
   home.homeDirectory = config.home.homeDirectory;
 
   imports = [
-#    ./program/zsh/sources.nix
+    ../../programs/zsh/sources.nix
     ../../programs/emacs/sources.nix
   ];
 

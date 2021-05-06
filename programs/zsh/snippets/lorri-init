@@ -1,0 +1,35 @@
+cat <<- EOF > shell.nix
+{ pkgs ? import <nixpkgs> {} }:
+
+pkgs.mkShell {
+  buildInputs = [
+    # pkgs.go_1_16
+    # pkgs.ginkgo
+    # pkgs.ruby_2_7
+  ];
+}
+EOF
+
+echo "/shell.nix" >> .git/info/exclude
+
+if [ -f .envrc ]; then
+
+cat <<- "EOF" >> .envrc
+
+if command -v lorri &> /dev/null; then
+   eval "$(lorri direnv)"
+fi
+EOF
+
+else
+
+cat <<- "EOF" > .envrc
+eval "$(lorri direnv)"
+EOF
+
+echo "/.envrc" >> .git/info/exclude
+
+fi
+
+direnv allow
+emacsclient --no-wait shell.nix
