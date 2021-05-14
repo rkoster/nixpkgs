@@ -6,6 +6,10 @@ pkgs.mkShell {
     # pkgs.go_1_16
     # pkgs.ginkgo
     # pkgs.ruby_2_7
+    # pkgs.fly72
+    # pkgs.fly67
+    # pkgs.fly64
+    # pkgs.fly60
   ];
 }
 EOF
