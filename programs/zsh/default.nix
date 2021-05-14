@@ -46,6 +46,7 @@
     export NIX_PATH="darwin-config=$HOME/.config/nixpkgs/darwin-configuration.nix:nixpkgs-overlays=$HOME/.config/nixpkgs/overlays:/nix/var/nix/profiles/per-user/root/channels''${NIX_PATH:+:$NIX_PATH}"
 
     fpath+=$XDG_CONFIG_HOME/zsh/snippets
+    export fpath
     autoload -Uz $fpath[-1]/*(.:t)
     '';
   
