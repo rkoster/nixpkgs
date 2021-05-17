@@ -1,0 +1,19 @@
+if [[ -z $1 && -z $2 ]]; then
+    echo "Usage:
+concourse-lpass-to-credhub {path_to_pipeline_file} {credhub_path} \
+-l <( lpass show --notes 'some lpass note' ) \
+-l <( lpass show --notes 'some lpass other note' ) \
+> creds.yml
+credhub import creds.yml
+"
+else
+    pipeline=${1}
+    shift
+    credhub_path=${1}
+    shift
+
+    bosh int <( echo "credentials:";
+		for secret in $(bosh int ${pipeline} --var-errs 2>&1 | grep ' -' | cut -d' ' -f6); do
+		    echo "- {name: ${credhub_path}/${secret}, type: value, value: ((${secret}))}"
+		done ) "${@}"
+fi
