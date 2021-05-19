@@ -1,0 +1,2 @@
+find ~/.config/nixpkgs -type f -not -path "*.git*" -exec realpath --relative-to ~/.config/nixpkgs {} \; \
+     | fzf | xargs -I{} emacsclient --no-wait ~/.config/nixpkgs/{}
