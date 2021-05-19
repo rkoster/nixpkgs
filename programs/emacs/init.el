@@ -49,6 +49,7 @@
   :commands (lsp lsp-deferred)
   :hook (go-mode . lsp-deferred)
         (ruby-mode . lsp-deferred)
+        (terraform-mode . lsp-deferred)
         (lsp-mode . lsp-enable-which-key-integration))
 
 (use-package go-mode
@@ -101,3 +102,9 @@
 (use-package yaml-mode
   :ensure t
   :mode ("\\.ya?ml\\'" . yaml-mode))
+
+(use-package terraform-mode
+  :ensure t
+  :init
+  (add-hook 'terraform-mode-hook #'terraform-format-on-save-mode)
+  :mode ("\\.tf\\'" . terraform-mode))

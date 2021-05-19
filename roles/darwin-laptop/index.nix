@@ -34,6 +34,8 @@
     yaml-language-server
     rnix-lsp
     solargraph
+    terraform-lsp
+    terraform # dependecy of terraform-lsp
 
     # nix
     manix

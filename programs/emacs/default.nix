@@ -24,6 +24,7 @@
     epkgs.nix-mode
     epkgs.yaml-mode
     epkgs.dockerfile-mode
+    epkgs.terraform-mode
 
     # visual
     epkgs.gruvbox-theme
