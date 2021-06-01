@@ -1,0 +1,2 @@
+lpass ls | grep -v '\/ \[id:' \
+    | fzf --no-mouse --preview='echo "{}" | sed -E "s/.+id: ([0-9]+)]./\1/g" | xargs -L1 lpass show' 
