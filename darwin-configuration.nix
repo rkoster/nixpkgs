@@ -42,6 +42,12 @@ in {
   programs.zsh.enable = true;
   services.lorri.enable = true;
 
+  services.postgresql = {
+    enable = true;
+    enableTCPIP = true;
+    dataDir = "/Users/" + username + "/postgres";
+  };
+
   users.users = builtins.listToAttrs [{
     name = username;
     value  = {
