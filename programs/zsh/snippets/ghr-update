@@ -1,0 +1,35 @@
+orgs=$(gh api graphql --paginate -f query='
+  query($endCursor: String) {
+    viewer {
+      organizations(first: 100, after: $endCursor) {
+	nodes { login }
+	pageInfo {
+	  hasNextPage
+	  endCursor
+	}
+      }
+    }
+  }
+' | jq -r -s '
+  map(.data.viewer.organizations.nodes | map(.login))
+  | flatten | sort | unique | .[]
+')
+for org in $orgs; do
+gh api graphql --paginate -f org="$org" -f query='
+  query($endCursor: String, $org: String!) {
+    organization(login: $org) {
+      repositories(first: 100, after: $endCursor) {
+	nodes { nameWithOwner }
+	pageInfo {
+	  hasNextPage
+	  endCursor
+	}
+      }
+    }
+  }
+'
+done | jq -r -s '
+  map(.data.organization.repositories.nodes | map(.nameWithOwner))
+  | flatten | sort | unique | reverse | .[]
+' > ~/.ghr-cache.json
+echo "Updated ~/.ghr-cache.json"
