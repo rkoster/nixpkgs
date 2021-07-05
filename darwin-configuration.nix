@@ -2,6 +2,15 @@
 
 let
   username = builtins.getEnv "USER";
+  localOverlays = let path = ./overlays; in with builtins;
+          map (n: import (path + ("/" + n)))
+            (filter (n: match ".*\\.nix" n != null )
+              (attrNames (readDir path)));
+  emacsOverlay = [
+    (import (builtins.fetchTarball {
+      url = https://github.com/nix-community/emacs-overlay/archive/master.tar.gz;
+    }))
+  ];
 in {
 
   services.nix-daemon.enable = true;
@@ -20,11 +29,7 @@ in {
 
   users.nix.configureBuildUsers = true;
 
-  nixpkgs.overlays =
-    let path = ./overlays; in with builtins;
-          map (n: import (path + ("/" + n)))
-            (filter (n: match ".*\\.nix" n != null )
-              (attrNames (readDir path)));
+  nixpkgs.overlays = localOverlays ++ emacsOverlay;
 
   nixpkgs.config.allowUnfree = true;
 
