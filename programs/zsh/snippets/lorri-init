@@ -11,6 +11,9 @@ pkgs.mkShell {
     # pkgs.fly64
     # pkgs.fly60
   ];
+  # shellHook = ''
+  #   export PATH=$PWD/bin:$PATH
+  # '';
 }
 EOF
 
