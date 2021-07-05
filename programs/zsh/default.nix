@@ -25,7 +25,7 @@
   # prezto = {
   #   enable = true;
   #   pmodules = [
-  #     "syntax-highlighting"      
+  #     "syntax-highlighting"
   #     "prompt"
   #     "environment"
   #     "autosuggestions"
@@ -49,7 +49,7 @@
     export fpath
     autoload -Uz $fpath[-1]/*(.:t)
     '';
-  
+
   sessionVariables = {
     EDITOR = "emacs";
     EMACS_SOCKET_NAME = "/private/tmp/emacs-$(tmux display-message -p '#S')-server";
@@ -64,6 +64,13 @@
     brw = "br ~/workspace";
     be = "bundle exec ";
     ber = "bundle exec rspec ";
-    nix-update = "sudo -H nix-channel --update; source ~/.zshrc; nix-channel --update; darwin-rebuild switch; source ~/.zshrc";
+    nix-update =''
+      sudo -H nix-channel --update;
+      source ~/.zshrc;
+      nix-channel --update;
+      darwin-rebuild switch;
+      source ~/.zshrc;
+      tmux source-file ~/.config/tmux/tmux.conf;
+      '';
   };
 }
