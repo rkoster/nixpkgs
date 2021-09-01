@@ -1,0 +1,5 @@
+grep -A1 'Cloud config' \
+     | grep -v -e "Cloud config" -e "--" \
+     | sed -e 's/=>/:/g' -e 's/nil/""/g' \
+     | jq 'to_entries | flatten | from_entries' \
+     | bosh int -

@@ -1,0 +1,4 @@
+grep external-cpi | grep 'request\|response' \
+  | sed -E 's/.* request: (\{.*\}) with.*/\1/g' \
+  | sed -E 's/.* response: (\{.*\}),.*/\1/g' \
+  | jq -s '.' | ytt -f -

@@ -1,0 +1,3 @@
+grep -A1 'DirectorJobRunner: Runtime configs' \
+  | tail -n 1 | sed -e 's/=>/:/g' -e 's/nil/""/g' \
+  | bosh int -
