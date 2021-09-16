@@ -14,4 +14,7 @@ self: super:
   gh = super.callPackage ../pkgs/gh { };
   runctl = super.callPackage ../pkgs/runctl { };
   git-duet = super.callPackage ../pkgs/git-duet { };
+  smith = super.callPackage ../pkgs/smith { };
+  om = super.callPackage ../pkgs/om { };
+  hub-tool = super.callPackage ../pkgs/hub-tool { };
 }
