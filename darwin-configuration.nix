@@ -51,6 +51,10 @@ in {
     enable = true;
     enableTCPIP = true;
     dataDir = "/Users/" + username + "/postgres";
+    extraConfig = ''
+      max_connections = 250
+      shared_buffers = 80MB
+    '';
   };
 
   users.users = builtins.listToAttrs [{
