@@ -64,6 +64,9 @@
     brw = "br ~/workspace";
     be = "bundle exec ";
     ber = "bundle exec rspec ";
+    smith-auth = ''
+      export TOOLSMITHS_API_TOKEN=$(lpass show --notes "Shared-BOSH Core (Pivotal Only)/toolsmiths-api-token" | head -n1)
+      '';
     nix-update =''
       sudo -H nix-channel --update;
       source ~/.zshrc;
