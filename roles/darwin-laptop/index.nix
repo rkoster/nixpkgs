@@ -23,7 +23,9 @@
     openssh
     watch
     wget
+    aria
     git-duet
+    # microplane
 
     coreutils # so realpath is globally available
     gcc # needed for emacs-nix-mode (otherwise triggers osx developer tools promt)
@@ -38,6 +40,11 @@
     terraform-lsp
     terraform # dependecy of terraform-lsp
 
+    # misc
+    leftovers
+    hub-tool
+    # xca # ssl gui
+
     # nix
     manix
 
@@ -45,6 +52,8 @@
     lastpass-cli
 
     bosh
+    smith
+    om
     ytt
     cf
     spruce
