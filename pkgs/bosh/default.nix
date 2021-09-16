@@ -2,13 +2,13 @@
 
 buildGoModule rec {
   pname = "bosh";
-  version = "6.4.1";
+  version = "6.4.6";
 
   src = fetchFromGitHub {
     owner = "cloudfoundry";
     repo = "bosh-cli";
     rev = "v${version}";
-    sha256 = "0vhnmghsjkqs3n024zhg40h5lx9pswxhbjm5ppv6snp9lhcjknjm";
+    sha256 = "1r1i94174mmbgydjnrfwrahgnl820m22117x9474sbxv521krlrh";
   };
 
   vendorSha256 = null;
@@ -16,7 +16,6 @@ buildGoModule rec {
   doCheck = false;
 
   preBuild = ''
-    go mod init github.com/cloudfoundry/bosh-cli
     sed 's/\[DEV BUILD\]/'"${version}-nix"'/' cmd/version.go > cmd/version.tmp && mv cmd/version{.tmp,.go}
   '';
 
