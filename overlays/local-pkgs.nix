@@ -17,4 +17,5 @@ self: super:
   smith = super.callPackage ../pkgs/smith { };
   om = super.callPackage ../pkgs/om { };
   hub-tool = super.callPackage ../pkgs/hub-tool { };
+  uaa-cli = super.callPackage ../pkgs/uaa-cli { };
 }
