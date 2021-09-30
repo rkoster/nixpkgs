@@ -1,3 +1,1 @@
-tr '\n' '\a' | grep -oP "manifest_text\" = '.*?', \"has_stale_errand_links" \
-   | tr '\a' '\n' | sed -e "s/manifest_text\" = '//g" -e "s/', \"has_stale_errand_links//g" \
-   | bosh int -
+awk '/Manifest:/{f=1;next} /D,|I,/{f=0} f' | bosh int -B
