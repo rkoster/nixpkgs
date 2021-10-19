@@ -18,4 +18,5 @@ self: super:
   om = super.callPackage ../pkgs/om { };
   hub-tool = super.callPackage ../pkgs/hub-tool { };
   uaa-cli = super.callPackage ../pkgs/uaa-cli { };
+  dyff = super.callPackage ../pkgs/dyff { };
 }

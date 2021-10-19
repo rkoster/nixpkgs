@@ -51,12 +51,14 @@
     _1password
     lastpass-cli
 
+    dyff
     bosh
     smith
     om
     ytt
     cf
     spruce
+    bundix
   ];
 
   programs.git = {
