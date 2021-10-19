@@ -1,0 +1,5 @@
+dyff between <(cat ${1} | grep 'Fetching existing instance for' \
+     | sed -E 's/.*spec_json=>"(\{.*\})",.*/\1/g' \
+     | sed -e 's/\\"/"/g' -e 's/\\\\"/\\"/g' -e 's/\\\\/\\/g' | jq -s -S 'map({key: .id, value: .}) | from_entries') \
+     <(cat ${1} | grep 'SET "spec_json" = ' \
+     | sed -E "s/.*'(\{.*\})'.*/\1/g" | sed "s/''/'/g" | jq -s -S 'map({key: .id, value: .}) | from_entries')
