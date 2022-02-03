@@ -48,6 +48,7 @@ in {
   services.lorri.enable = true;
 
   services.postgresql = {
+    package = pkgs.postgresql_13;
     enable = true;
     enableTCPIP = true;
     dataDir = "/Users/" + username + "/postgres";
