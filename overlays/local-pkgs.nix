@@ -19,4 +19,6 @@ self: super:
   hub-tool = super.callPackage ../pkgs/hub-tool { };
   uaa-cli = super.callPackage ../pkgs/uaa-cli { };
   dyff = super.callPackage ../pkgs/dyff { };
+  peribolos = super.callPackage ../pkgs/peribolos { };
+  jless = super.callPackage ../pkgs/jless { };
 }

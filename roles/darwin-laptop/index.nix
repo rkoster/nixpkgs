@@ -25,6 +25,8 @@
     wget
     aria
     git-duet
+    comma
+    jless
     # microplane
 
     coreutils # so realpath is globally available
@@ -94,12 +96,6 @@
   programs.pazi = {
     enable = true;
     enableZshIntegration = true;
-  };
-
-  programs.mcfly = {
-    enable = true;
-    enableZshIntegration = true;
-    keyScheme = "emacs";
   };
 
   programs.noti = {
