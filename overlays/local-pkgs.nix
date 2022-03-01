@@ -21,4 +21,5 @@ self: super:
   dyff = super.callPackage ../pkgs/dyff { };
   peribolos = super.callPackage ../pkgs/peribolos { };
   jless = super.callPackage ../pkgs/jless { };
+  pinniped = super.callPackage ../pkgs/pinniped { };
 }

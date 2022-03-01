@@ -27,6 +27,7 @@
     git-duet
     comma
     jless
+    pinniped
     # microplane
 
     coreutils # so realpath is globally available
