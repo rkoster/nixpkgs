@@ -40,6 +40,7 @@ let
 in {
   # fly60 = fly "6.0.0" "0chavwymyh5kv4fkvdjvf3p5jjx4yn9aavq66333xnsl5pn7q9dq" super.lib.fakeSha256;
   # nix-build '<nixpkgs>' -A fly60 # will get you the real sha
+  fly78 = fly "7.8.2" "sha256-Lgsn5k3ITJnRnOXXZjfjlEEG+OvTZjFq+LB3Us3DH8k=" "sha256-91N6AOxXFOI6AM28avlInseAeZkqE9IfybJAX31tPDg=";
   fly76 = fly "7.6.0" "1085gxjrc5fh6a1j2cjcv3h4na4cabcliw6isgf0aimqz4ic1v77" "0dhcs5ma968bii2np51zbib2kvc8g8cpjkwzvnzgpmz7pi4z3b37";
   fly75 = fly "7.5.0" "1085gxjrc5fh6a1j2cjcv3h4na4cabcliw6isgf0aimqz4ic1v77" "0dhcs5ma968bii2np51zbib2kvc8g8cpjkwzvnzgpmz7pi4z3b37";
   fly74 = fly "7.4.0" "0hy5sndqnbci42wc336hand9xkqkf6q5xdchxmjknnshkd6hzwaj" "02dknyv3nxy55dspdcv321x4db8hfxqmz0jivkijyd8a18d8g3r1";

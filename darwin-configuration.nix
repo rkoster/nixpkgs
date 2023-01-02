@@ -16,6 +16,7 @@ in {
   services.nix-daemon.enable = true;
 
   nix = {
+    # package = pkgs.nix_2_4;
     # does not work yet because https://github.com/LnL7/nix-darwin/issues/158
     # tmp workaround in ~/.zshrc
     nixPath = [
@@ -25,9 +26,11 @@ in {
       "\$HOME/.nix-defexpr/channels"
     ];
     gc.automatic = true;
+    extraOptions = ''
+      experimental-features = nix-command
+    '';
+    configureBuildUsers = true;
   };
-
-  users.nix.configureBuildUsers = true;
 
   nixpkgs.overlays = localOverlays ++ emacsOverlay;
 
@@ -36,7 +39,7 @@ in {
   imports = [ ./home.nix ];
 
   fonts = {
-    enableFontDir = true;
+    fontDir.enable = true;
     fonts = [
       pkgs.hack-font
     ];
@@ -52,10 +55,21 @@ in {
     enable = true;
     enableTCPIP = true;
     dataDir = "/Users/" + username + "/postgres";
-    extraConfig = ''
-      max_connections = 250
-      shared_buffers = 80MB
-    '';
+    settings = {
+      max_connections = 250;
+      shared_buffers = "80MB";
+    };
+    # authentication = pkgs.lib.mkOverride 10 ''
+    #   # Generated file; do not edit!
+    #   local all pivotal          trust
+    #   local all all              peer
+    #   host  all all 127.0.0.1/32 md5
+    #   host  all all ::1/128      md5
+    # '';
+    # initialScript = pkgs.writeText "backend-initScript" ''
+    #   CREATE ROLE pivotal WITH LOGIN SUPERUSER;
+    #   GRANT ALL PRIVILEGES ON DATABASE postgres TO pivotal;
+    # '';
   };
 
   users.users = builtins.listToAttrs [{

@@ -22,4 +22,6 @@ self: super:
   peribolos = super.callPackage ../pkgs/peribolos { };
   jless = super.callPackage ../pkgs/jless { };
   pinniped = super.callPackage ../pkgs/pinniped { };
+  nsc = super.callPackage ../pkgs/nsc { };
+  csb = super.callPackage ../pkgs/csb { };
 }

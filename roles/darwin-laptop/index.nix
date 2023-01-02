@@ -28,6 +28,9 @@
     comma
     jless
     pinniped
+    colima
+    docker
+    kubectl
     # microplane
 
     coreutils # so realpath is globally available
@@ -40,8 +43,8 @@
     yaml-language-server
     rnix-lsp
     solargraph
-    terraform-lsp
-    terraform # dependecy of terraform-lsp
+    # terraform-lsp
+    # terraform # dependecy of terraform-lsp
 
     # misc
     leftovers
@@ -80,7 +83,7 @@
   programs.direnv = {
     enable = true;
     enableZshIntegration = true;
-    enableNixDirenvIntegration = true;
+    nix-direnv.enable = true;
   };
 
   programs.ssh = {
