@@ -24,4 +24,6 @@ self: super:
   pinniped = super.callPackage ../pkgs/pinniped { };
   nsc = super.callPackage ../pkgs/nsc { };
   csb = super.callPackage ../pkgs/csb { };
+  osstp-load = super.callPackage ../pkgs/osstp-load { };
+  osspi-signer = super.callPackage ../pkgs/osspi-signer { };
 }
