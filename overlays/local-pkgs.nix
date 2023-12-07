@@ -11,7 +11,6 @@ self: super:
   genesis = super.callPackage ../pkgs/genesis { };
   credhub = super.callPackage ../pkgs/credhub { };
   gojson = super.callPackage ../pkgs/gojson { };
-  gh = super.callPackage ../pkgs/gh { };
   runctl = super.callPackage ../pkgs/runctl { };
   git-duet = super.callPackage ../pkgs/git-duet { };
   smith = super.callPackage ../pkgs/smith { };
@@ -24,6 +23,11 @@ self: super:
   pinniped = super.callPackage ../pkgs/pinniped { };
   nsc = super.callPackage ../pkgs/nsc { };
   csb = super.callPackage ../pkgs/csb { };
+  srpcli = super.callPackage ../pkgs/srpcli { };
   osstp-load = super.callPackage ../pkgs/osstp-load { };
   osspi-signer = super.callPackage ../pkgs/osspi-signer { };
+  osspi-cli = super.callPackage ../pkgs/osspi-cli { };
+  tanzu = super.callPackage ../pkgs/tanzu { };
+  h2o = super.callPackage ../pkgs/h2o { };
+  shepherd = super.callPackage ../pkgs/shepherd { };
 }
