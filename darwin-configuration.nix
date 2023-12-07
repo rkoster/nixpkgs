@@ -59,13 +59,14 @@ in {
       max_connections = 250;
       shared_buffers = "80MB";
     };
-    # authentication = pkgs.lib.mkOverride 10 ''
-    #   # Generated file; do not edit!
-    #   local all pivotal          trust
-    #   local all all              peer
-    #   host  all all 127.0.0.1/32 md5
-    #   host  all all ::1/128      md5
-    # '';
+    authentication = pkgs.lib.mkOverride 10 ''
+      # Generated file; do not edit!
+      local all pivotal          trust
+      local all postgres         trust
+      local all all              peer
+      host  all all 127.0.0.1/32 md5
+      host  all all ::1/128      md5
+    '';
     # initialScript = pkgs.writeText "backend-initScript" ''
     #   CREATE ROLE pivotal WITH LOGIN SUPERUSER;
     #   GRANT ALL PRIVILEGES ON DATABASE postgres TO pivotal;
