@@ -75,6 +75,15 @@
       credential = { helper = "osxkeychain"; };
       pull = { rebase = true; };
       init = { defaultBranch = "main"; };
+      user = {
+        signingkey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFq2Q5tJbPHP1ignMYswvcqt16RVTiznVB6JFaz87fhc";
+      };
+      gpg = { format = "ssh"; };
+      "gpg \"ssh\"" = {
+        program = "/Applications/1Password.app/Contents/MacOS/op-ssh-sign";
+      };
+      commit = { gpgsign = true; };
+      tag = { gpgsign = true; };
     };
     ignores = [ "*~" ];
     lfs.enable = true;
@@ -90,6 +99,9 @@
     enable = true;
     compression = true;
     forwardAgent = false;
+    extraConfig = ''
+      IdentityAgent "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
+    '';
   };
 
   programs.fzf = {
