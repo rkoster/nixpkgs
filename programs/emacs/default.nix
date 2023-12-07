@@ -2,35 +2,13 @@
 
 {
   enable = true;
-  package = pkgs.emacs-nox;
-  extraPackages = epkgs: [
-    epkgs.use-package
-    # util
-    epkgs.magit
-    epkgs.wgrep
-    epkgs.company
-    epkgs.flycheck
-    epkgs.which-key
-    epkgs.projectile
-    epkgs.whitespace-cleanup-mode
-    epkgs.direnv
-    epkgs.helm
-    # epkgs.fzf
-    
-    # lang
-    epkgs.lsp-mode
-    epkgs.lsp-ui 
-    epkgs.go-mode
-    epkgs.nix-mode
-    epkgs.yaml-mode
-    epkgs.dockerfile-mode
-    epkgs.terraform-mode
-
-    # visual
-    epkgs.gruvbox-theme
-    epkgs.powerline
-    epkgs.powerline-evil
-    epkgs.highlight-parentheses
-   ];
+  package = (pkgs.emacsWithPackagesFromUsePackage {
+    config = ./emacs.el;
+    defaultInitFile = true;
+    package = pkgs.emacs29-nox;
+    alwaysEnsure = true;
+    extraEmacsPackages = epkgs: [
+      epkgs.treesit-grammars.with-all-grammars
+    ];
+  });
 }
-
