@@ -11,7 +11,7 @@ buildGoModule rec {
     rev = "0c178e7c3a998b774814621e97deb257674e356f"; # v2.6.0
   };
 
-  vendorSha256 = null;
+  vendorHash = null;
 
   doCheck = false;
 

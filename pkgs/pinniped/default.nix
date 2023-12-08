@@ -11,15 +11,14 @@ buildGoModule rec {
     sha256 = "sha256-FtIS8yKOjg4t5GehfNuaNZRidl4OAnvz+6kSemXXxh8=";
   };
 
-  vendorSha256 = "sha256-N9+E8xHyUdZ3jZZxOjUrx0Dd8tT5TpN5KZNPBkqaWp0=";
+  vendorHash = "sha256-N9+E8xHyUdZ3jZZxOjUrx0Dd8tT5TpN5KZNPBkqaWp0=";
 
   doCheck = false;
 
-  buildFlagsArray = ''
-    -ldflags=
-      -X k8s.io/client-go/pkg/version.gitVersion=v${version}
-      -X k8s.io/component-base/version.gitVersion=v${version}
-  '';
+  ldflags = [
+    "-X k8s.io/client-go/pkg/version.gitVersion=v${version}"
+    "-X k8s.io/component-base/version.gitVersion=v${version}"
+  ];
 
   subPackages = [ "cmd/..." ];
 

@@ -12,16 +12,15 @@ buildGoModule rec {
     sha256 = "193vsdvvl8w6lqw4qlwyiamhidicwb54ir9nksyc7xps98wcy3jc";
   };
 
-  vendorSha256 = null;
+  vendorHash = null;
 
   doCheck = false;
 
   subPackages = [ "..." ];
 
-  buildFlagsArray = ''
-    -ldflags=
-    -X main.VersionString=${version} -X main.RevisionString=ffae4ac
-  '';
+  ldflags = [
+    "-X main.VersionString=${version} -X main.RevisionString=ffae4ac"
+  ];
 
   meta = with lib; {
     description = "Support for pairing with git";

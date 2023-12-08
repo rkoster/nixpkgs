@@ -10,14 +10,13 @@ buildGoModule rec {
     rev = "b3d85f1c9c888ac3d98fe7962b649760e63eac52"; # 2.2.0
   };  
 
-  vendorSha256 = "sha256-SxVAgPsh8YeZ7omVXU1jYPO5QQpx60GVDdZ2bAtG3uA=";
+  vendorHash = "sha256-SxVAgPsh8YeZ7omVXU1jYPO5QQpx60GVDdZ2bAtG3uA=";
 
   doCheck = false;
 
-  buildFlagsArray = ''
-    -ldflags=
-    -X gitlab.eng.vmware.com/h2o/neptune/cli/conf.Version=${version}
-  '';    
+  ldflags = [
+    "-X gitlab.eng.vmware.com/h2o/neptune/cli/conf.Version=${version}"
+  ];
 
   subPackages = [ "main.go" ];
 

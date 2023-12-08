@@ -11,7 +11,7 @@ buildGoModule rec {
     sha256 = "01zg44zf77k63rl9jf2ckjnbzv166v0x1p08x77vg9ckkfr6ldmz";
   };
 
-  vendorSha256 = null;
+  vendorHash = null;
 
   doCheck = false;
 
@@ -23,10 +23,9 @@ buildGoModule rec {
     go mod vendor
   '';
 
-  buildFlagsArray = ''
-    -ldflags=
-    -X main.Version=${version}
-  '';
+  ldflags = [
+    "-X main.Version=${version}"
+  ];
 
   meta = with lib; {
     description = "A BOSH template merge tool";

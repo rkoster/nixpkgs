@@ -11,16 +11,15 @@ buildGoModule rec {
     sha256 = "0g7ripvyg89f831bvc53svhaw4ck3xclkcz93hc2rlfy0029mr1k";
   };
 
-  vendorSha256 = null;
+  vendorHash = null;
 
   doCheck = false;
 
   subPackages = [ "." ];
 
-  buildFlagsArray = ''
-    -ldflags=
-    -X code.cloudfoundry.org/cli/version.binaryVersion=${version}
-  '';
+  ldflags = [
+    "-X code.cloudfoundry.org/cli/version.binaryVersion=${version}"
+  ];
 
   postBuild = ''
      cd "$GOPATH/bin"

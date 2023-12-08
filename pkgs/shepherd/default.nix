@@ -10,15 +10,14 @@ buildGoModule rec {
     rev = "dbda0ae5cc7873c3a98446d01d3598a8195732ce"; # 2.2.0
   };  
 
-  vendorSha256 = "sha256-GpGP6z4GOVmnz3FZSSCTzZRTKCUnqiHXwB6McxFReis=";
+  vendorHash = "sha256-GpGP6z4GOVmnz3FZSSCTzZRTKCUnqiHXwB6McxFReis=";
 
   doCheck = false;
 
-  buildFlagsArray = ''
-    -ldflags=
-    -X gitlab.eng.vmware.com/shepherd/shepherd2/client/cli/cmd.Version=${version}
-    -X gitlab.eng.vmware.com/shepherd/shepherd2/client/cli/cmd.DefaultLocation=https://v2.shepherd.run
-  '';    
+  ldflags = [
+    "-X gitlab.eng.vmware.com/shepherd/shepherd2/client/cli/cmd.Version=${version}"
+    "-X gitlab.eng.vmware.com/shepherd/shepherd2/client/cli/cmd.DefaultLocation=https://v2.shepherd.run"
+  ];
 
   subPackages = [ "main.go" ];
   modRoot = "client/cli";

@@ -11,16 +11,15 @@ buildGoModule rec {
     sha256 = "1yhacjf41j3vmvl5ns5a6lb4bz74mb2y189qki29aw3dddl5nrhx";
   };
 
-  vendorSha256 = null;
+  vendorHash = null;
 
   doCheck = false;
 
   subPackages = [ "cli/client" ];
 
-  buildFlagsArray = ''
-    -ldflags=
-      -X main.appSemver=v${version}"
-  '';
+  ldflags = [
+    "-X main.appSemver=v${version}"
+  ];
 
   postBuild = ''
      cd "$GOPATH/bin"

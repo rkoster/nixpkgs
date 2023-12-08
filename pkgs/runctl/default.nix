@@ -11,17 +11,16 @@ buildGoModule rec {
     rev = "c3838e844efc96ef0111a4d7bb29d8560a2fbb14"; # release-v2.0.0
   };
 
-  vendorSha256 = "0cnn964g4qkr7jxjp5chzrvq2qx4fk98m0jcgfs5ryxycc68x386";
+  vendorHash = "0cnn964g4qkr7jxjp5chzrvq2qx4fk98m0jcgfs5ryxycc68x386";
 
   doCheck = false;
 
   subPackages = [ "runctl.go" ];
 
-  buildFlagsArray = ''
-    -ldflags=
-    -X gitlab.com/vmware/devtools/runway/runctl/version.Version=${version}
-    -X gitlab.com/vmware/devtools/runway/runctl/version.ReleasePhase=nix
-  '';
+  ldflags = [
+    "-X gitlab.com/vmware/devtools/runway/runctl/version.Version=${version}"
+    "-X gitlab.com/vmware/devtools/runway/runctl/version.ReleasePhase=nix"
+  ];
 
   meta = with lib; {
     description = "runctl; CLI to manage Runway namespaces and plugins";

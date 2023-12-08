@@ -11,17 +11,16 @@ buildGoModule rec {
     sha256 = "0n408mwz5w5ahx5dbz351hnn38ggykgcbc7n08f5m33cc88rxckj";
   };
 
-  vendorSha256 = "06gzri7gckna9q9ab9hq8rm8dk0ggmsx74pyjd3cp2ywzscf5ldr";
+  vendorHash = "06gzri7gckna9q9ab9hq8rm8dk0ggmsx74pyjd3cp2ywzscf5ldr";
 
   doCheck = false;
 
   subPackages = [ "main.go" ];
 
-  buildFlagsArray = ''
-    -ldflags=
-    -X code.cloudfoundry.org/uaa-cli/version.Version=${version}
-     -X code.cloudfoundry.org/uaa-cli/version.Commit=nix"
-  '';
+  ldflags = [
+    "-X code.cloudfoundry.org/uaa-cli/version.Version=${version}"
+    "-X code.cloudfoundry.org/uaa-cli/version.Commit=nix"
+  ];
 
   postBuild = ''
      cd "$GOPATH/bin"

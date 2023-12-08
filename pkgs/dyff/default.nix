@@ -11,16 +11,15 @@ buildGoModule rec {
     sha256 = "13hsrbm3napacck273azrsqnna4740sriiwgcgiw2h61jjbsv8ad";
   };
 
-  vendorSha256 = "0hnq87ds4aijrgr01rbgvyblw4jbvwdli125pyprry6gpyscbgfw";
+  vendorHash = "sha256-rWJT9/V6iqsWYhNfzOxlMyDHN7xb+4uM+aeCbjn3GMk=";
 
   doCheck = false;
 
   subPackages = [ "cmd/dyff" ];
 
-  buildFlagsArray = ''
-    -ldflags=
-    -X github.com/homeport/dyff/internal/cmd.version=${version}
-  '';
+  ldflags = [
+    "-X github.com/homeport/dyff/internal/cmd.version=${version}"
+  ];
   
   meta = with lib; {
     description = "/ˈdʏf/ - diff tool for YAML files, and sometimes JSON";

@@ -11,7 +11,7 @@ buildGoModule rec {
     sha256 = "sha256-+WYRHflT3rkGKjvGjNo3zj56muBfmF/2a2GHgy8Ahes=";
   };
 
-  vendorSha256 = "sha256-UHkkAFgrWEKXyTZUji8Gvm8GDb3S6u4SiTO3UABrzfo=";
+  vendorHash = "sha256-UHkkAFgrWEKXyTZUji8Gvm8GDb3S6u4SiTO3UABrzfo=";
 
   doCheck = false;
 
@@ -19,10 +19,9 @@ buildGoModule rec {
     export GOWORK=off
   '';
 
-  buildFlagsArray = ''
-    -ldflags=
-    -X github.com/vmware-tanzu/tanzu-cli/pkg/buildinfo.Version=main.Version=${version}
-  '';
+  ldflags = [
+    "-X github.com/vmware-tanzu/tanzu-cli/pkg/buildinfo.Version=main.Version=${version}"
+  ];
 
   subPackages = [ "cmd/tanzu" ];
 

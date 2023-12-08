@@ -11,14 +11,13 @@ buildGoModule rec {
     sha256 = "19xr608q9w0sjwi7xagpami9b0x9kwpc78p8d83wfj3l82xd4xkd";
   };
 
-  vendorSha256 = null;
+  vendorHash = null;
 
   doCheck = false;
 
-  buildFlagsArray = ''
-    -ldflags=
-      -X main.Version=v${version}"
-  '';
+  ldflags = [
+    "-X main.Version=v${version}"
+  ];
 
   preBuild = ''
     go mod init github.com/cloudfoundry/bosh-bootloader

@@ -11,14 +11,13 @@ buildGoModule rec {
     sha256 = "1y9ih2rgpypj8kwsclw9yg5m4vjzsl7ipwnmqfc7ywimd7q12ssb";
   };
 
-  vendorSha256 = "0rdppbjvy05f175sz3brpzhx2br5vsgn6cn3p0idrk5xrapbyv15";
+  vendorHash = "0rdppbjvy05f175sz3brpzhx2br5vsgn6cn3p0idrk5xrapbyv15";
 
   doCheck = false;
 
-  buildFlagsArray = ''
-    -ldflags=
-    -X github.com/docker/hub-tool/internal.Version=${version}
-  '';
+  ldflags = [
+    "-X github.com/docker/hub-tool/internal.Version=${version}"
+  ];
 
   subPackages = [ "main.go" ];
 

@@ -11,8 +11,8 @@ buildGoModule rec {
     rev = "6ff5e40f85e626bec36b8989f051c353025e9ed0"; # 0.7.12
   };
 
-  #  vendorSha256 = "0cnn964g4qkr7jxjp5chzrvq2qx4fk98m0jcgfs5ryxycc68x386";
-  vendorSha256 = lib.fakeSha256;
+  #  vendorHash = "0cnn964g4qkr7jxjp5chzrvq2qx4fk98m0jcgfs5ryxycc68x386";
+  vendorHash = lib.fakeSha256;
 
   doCheck = false;
 
@@ -59,11 +59,10 @@ buildGoModule rec {
   #   pkgs.pkgconfig
   # ];
 
-  buildFlagsArray = ''
-    -ldflags=
-      -X gitlab.eng.vmware.com/srp/helix/srpcli/version.Version=${version} 
-      -X gitlab.eng.vmware.com/srp/helix/srpcli/version.ReleaseBuild=nix"
-  '';
+  ldflags = [
+    "-X gitlab.eng.vmware.com/srp/helix/srpcli/version.Version=${version} "
+    "-X gitlab.eng.vmware.com/srp/helix/srpcli/version.ReleaseBuild=nix"
+  ];
 
   meta = with lib; {
     description = "Core CLI tool that manages SRP related data and manages data on SRP Platform (Helix)";
