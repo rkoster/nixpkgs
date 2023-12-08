@@ -41,8 +41,10 @@
     brw = "br ~/workspace";
     be = "bundle exec ";
     ber = "bundle exec rspec ";
+    intoto-inspect = "jq -r .payload | base64 -d | jq .";
+    colima-start = "colima start --cpu 8 --memory 16 --disk 200 --arch x86_64 --vm-type vz";
     smith-auth = ''
-      export TOOLSMITHS_API_TOKEN=$(lpass show --notes "Shared-BOSH Core (Pivotal Only)/toolsmiths-api-token" | head -n1)
+      export TOOLSMITHS_API_TOKEN=$(lpass show --notes "Shared-BOSH Core (Pivotal Only)/toolsmiths-api-token" | head -n1 | cut -d'"' -f2)
       '';
     nix-update =''
       sudo -H nix-channel --update;
