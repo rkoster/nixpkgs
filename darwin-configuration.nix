@@ -38,6 +38,8 @@ in {
 
   imports = [ ./home.nix ];
 
+  security.pam.enableSudoTouchIdAuth = true;
+
   fonts = {
     fontDir.enable = true;
     fonts = [
