@@ -14,7 +14,7 @@ orgs=$(gh api graphql --paginate -f query='
   map(.data.viewer.organizations.nodes | map(.login))
   | flatten | sort | unique | .[]
 ')
-for org in $orgs; do
+for org in $(echo $orgs); do
 gh api graphql --paginate -f org="$org" -f query='
   query($endCursor: String, $org: String!) {
     organization(login: $org) {
