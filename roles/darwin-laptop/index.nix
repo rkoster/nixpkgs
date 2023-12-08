@@ -16,6 +16,7 @@
 
   home.packages = with pkgs; [
     jq
+    ripgrep
     lnav
     tree
     pwgen
@@ -27,32 +28,12 @@
     git-duet
     comma
     jless
-    pinniped
     colima
     docker
     kubectl
-    # microplane
 
     coreutils # so realpath is globally available
     gcc # needed for emacs-nix-mode (otherwise triggers osx developer tools promt)
-    clang-tools
-
-    # lang server
-    gopls
-    godef
-    yaml-language-server
-    rnix-lsp
-    solargraph
-    # terraform-lsp
-    # terraform # dependecy of terraform-lsp
-
-    # misc
-    leftovers
-    hub-tool
-    # xca # ssl gui
-
-    # nix
-    manix
 
     _1password
     lastpass-cli
@@ -61,6 +42,7 @@
     bosh
     smith
     om
+    bosh-bootloader
     ytt
     cf
     spruce
