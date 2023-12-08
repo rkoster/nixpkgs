@@ -1,0 +1,6 @@
+echo -e "
+export BOSH_CLIENT_SECRET=$(credhub-find-get bosh/admin_password | bosh int --path /value -)
+export BOSH_CLIENT=admin
+export BOSH_ENVIRONMENT=https://$(bosh manifest -d bosh | bosh int --path /instance_groups/0/networks/0/static_ips/0 -):25555
+export BOSH_CA_CERT=\"$(credhub-find-get bosh/director_ssl -k ca)\"
+"

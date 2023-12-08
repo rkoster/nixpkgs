@@ -1,1 +1,1 @@
-awk '/Manifest:/{f=1;next} /D,|I,/{f=0} f' | bosh int -B
+awk '/Manifest:/{f=1;next} /D,|I,/{f=0} f' | bosh int -

@@ -1,0 +1,31 @@
+bd=~/workspace/bosh-deployment
+
+ops='
+- type: remove
+  path: /releases/name=bosh/url
+
+- type: remove
+  path: /releases/name=bosh/sha1
+
+- type: replace
+  path: /releases/name=bosh/version
+  value: latest
+
+- type: replace
+  path: /instance_groups/name=bosh/azs?
+  value: [az1]
+
+- type: replace
+  path: /stemcells/alias=default/os
+  value: ubuntu-bionic
+
+- type: remove
+  path: /instance_groups/name=bosh/jobs/name=disable_agent
+'
+
+bosh -d bosh -n deploy ${bd}/bosh.yml \
+     -o ${bd}/bosh-lite.yml \
+     -o ${bd}/misc/bosh-dev.yml \
+     -o <(echo -e "${ops}") \
+     -v internal_ip=10.0.255.10 \
+     -v director_name="dev-director"
