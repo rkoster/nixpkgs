@@ -1,7 +1,7 @@
 self: super:
 
 let
-  fly = (versionArg: sha256Arg: vendorSha256Arg: (
+  fly = (versionArg: sha256Arg: vendorHashArg: (
     super.buildGoModule rec {
       pname = "fly";
       version = versionArg;
@@ -13,16 +13,15 @@ let
        sha256 = sha256Arg;
      };
 
-     vendorSha256 = vendorSha256Arg;
+     vendorHash = vendorHashArg;
 
      doCheck = false;
 
      subPackages = [ "fly" ];
 
-     buildFlagsArray = ''
-       -ldflags=
-         -X github.com/concourse/concourse.Version=${version}
-     '';
+     ldflags = [
+       "-X github.com/concourse/concourse.Version=${version}"
+     ];
 
      postInstall = super.lib.optionalString (super.stdenv.hostPlatform == super.stdenv.buildPlatform) ''
        mkdir -p $out/share/{bash-completion/completions,zsh/site-functions}
