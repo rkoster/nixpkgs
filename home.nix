@@ -6,6 +6,7 @@ let
     home.username = username;
     home.homeDirectory = "/Users/" + username;
     xdg.configHome = "/Users/" + username + "/.config";
+    xdg.runtimeDir = "/Users/" + username + "/Library/Caches/TemporaryItems";
   };
 in {
 
