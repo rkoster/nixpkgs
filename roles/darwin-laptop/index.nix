@@ -50,6 +50,7 @@
     dyff
     bosh
     smith
+    shepherd
     om
     bosh-bootloader
     ytt
