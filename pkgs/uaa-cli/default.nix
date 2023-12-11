@@ -2,16 +2,16 @@
 
 buildGoModule rec {
   pname = "uaa";
-  version = "0.10.0";
+  version = "0.13.0";
 
   src = fetchFromGitHub {
-    owner = "cloudfoundry-incubator";
+    owner = "cloudfoundry";
     repo = "uaa-cli";
     rev = "${version}";
-    sha256 = "0n408mwz5w5ahx5dbz351hnn38ggykgcbc7n08f5m33cc88rxckj";
+    sha256 = "sha256-0otJqWBesKzZ83A+N348kZmoDJSAJKcYTaEsiz3vjbg=";
   };
 
-  vendorHash = "06gzri7gckna9q9ab9hq8rm8dk0ggmsx74pyjd3cp2ywzscf5ldr";
+  vendorHash = "sha256-QKI0trOROhFH5DgyP8Io1h/AsoWbgTJF8/c2eXyClHI=";
 
   doCheck = false;
 
