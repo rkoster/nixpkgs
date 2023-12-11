@@ -24,6 +24,7 @@
     openssh
     watch
     wget
+    nmap
     aria
     git-duet
     comma
@@ -38,6 +39,13 @@
 
     _1password
     lastpass-cli
+
+    # language server
+    gopls # go
+    yaml-language-server # yaml
+    rnix-lsp # nix
+    solargraph # ruby
+    nodePackages.bash-language-server # bash
 
     dyff
     bosh
