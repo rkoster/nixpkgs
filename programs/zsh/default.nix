@@ -56,6 +56,13 @@
         --namespace official --pool ''${TAS_POOL:=tas-5_0} --duration 8h --json | jq -r '.id')
       shepherd get lease --namespace official ''${SHEPHERD_LEASE_ID} --interactive
       shepherd get lease --namespace official ''${SHEPHERD_LEASE_ID} --json | jq '.output' > ''${ENVIRONMENT_LOCK_METADATA}
+      eval "$(smith bosh)"
+    '';
+    shepherd-tas-last-lease = ''
+      export ENVIRONMENT_LOCK_METADATA=$(mktemp --suffix=-tas-sheperd.json)
+      export SHEPHERD_LEASE_ID=$(shepherd get lease --namespace official --last-lease --json | jq -r '.id')
+      shepherd get lease --namespace official ''${SHEPHERD_LEASE_ID} --json | jq '.output' > ''${ENVIRONMENT_LOCK_METADATA}
+      eval "$(smith bosh)"
     '';
     shepherd-delete-my-leases = ''
       shepherd list lease --namespace official --json \
