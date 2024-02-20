@@ -112,10 +112,10 @@
 
   programs.starship = import ../../programs/starship/default.nix;
   programs.broot = import ../../programs/broot/default.nix;
-  programs.alacritty = import ../../programs/alacritty/default.nix;
   programs.zsh = import ../../programs/zsh/default.nix { config = config; pkgs = pkgs; };
   programs.emacs = import ../../programs/emacs/default.nix { pkgs = pkgs; };
   programs.tmux = import ../../programs/tmux/default.nix { pkgs = pkgs; };
+  programs.kitty = import ../../programs/kitty/default.nix { pkgs = pkgs; };
 
   home.stateVersion = "21.03";
 }
