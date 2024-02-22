@@ -37,7 +37,7 @@ let
      };
     }));
 in {
-  # fly60 = fly "6.0.0" "0chavwymyh5kv4fkvdjvf3p5jjx4yn9aavq66333xnsl5pn7q9dq"
+  # fly60 = fly "6.0.0" lib.fakeHash lib.fakeHash;
   # nix-build '<nixpkgs>' -A fly60 # will get you the real sha
   fly711 = fly "7.11.0" "sha256-lp6EXdwmgmjhFxRQXn2P4iRrtJS1QTvg4225V/6E7MI=" "sha256-p3EhXrRjAFG7Ayfj/ArAWO7KL3S/iR/nwFwXcDc+DSs=";
   fly710 = fly "7.10.0" "sha256-KmKIr7Y3CQmv1rXdju6xwUHABqj/dkXpgWc/yNrAza8=" "sha256-lc0okniezfTNLsnCBIABQxSgakRUidsprrEnkH8il2g=";
