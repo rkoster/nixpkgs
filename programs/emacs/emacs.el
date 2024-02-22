@@ -8,7 +8,7 @@
 ;; Theme
 (use-package gruvbox-theme
   :config
-  (load-theme 'gruvbox-dark-medium t))
+  (load-theme 'gruvbox-dark-hard t))
 
 (setq-default indent-tabs-mode nil)
 (setq make-backup-files nil)

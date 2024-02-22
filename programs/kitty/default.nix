@@ -20,5 +20,5 @@
     enable_audio_bell = "no";
   };
   shellIntegration.enableZshIntegration = true;
-  theme = "Gruvbox Material Dark Soft";
+  theme = "Gruvbox Material Dark Hard";
 }
