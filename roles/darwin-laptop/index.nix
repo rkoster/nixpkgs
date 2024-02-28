@@ -25,6 +25,7 @@
     watch
     wget
     nmap
+    arp-scan
     aria
     git-duet
     comma
