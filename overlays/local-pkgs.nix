@@ -30,4 +30,5 @@ self: super:
   tanzu = super.callPackage ../pkgs/tanzu { };
   h2o = super.callPackage ../pkgs/h2o { };
   shepherd = super.callPackage ../pkgs/shepherd { };
+  kiln = super.callPackage ../pkgs/kiln { };
 }
