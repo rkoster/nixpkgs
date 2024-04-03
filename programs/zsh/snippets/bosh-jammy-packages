@@ -1,0 +1,2 @@
+curl -sL https://bosh.io/d/stemcells/bosh-aws-xen-hvm-ubuntu-jammy-go_agent \
+   | tar -xz -O packages.txt

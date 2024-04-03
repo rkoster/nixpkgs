@@ -1,0 +1,7 @@
+curl -s "https://ubuntu.com/security/notices/${1}.json" | jq -r --arg package "${2}" \
+  '.release_packages.jammy | map({
+    name: .name, version: .version
+   })
+     | map(select(.name == $package))
+     | map("- \(.name)@\(.version)")
+     | .[]'

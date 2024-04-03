@@ -1,0 +1,8 @@
+cat <<EOF
+Latest Jammy Stemcell: $(bosh-jammy-latest) ships: ${2}@$(bosh-jammy-packages | grep -e ${2} | xargs | cut -d' ' -f3)
+${1} contains the following patches:
+$(canonical-notice ${1} ${3})
+package bumps:
+$(canonical-notice-without-cves ${1} ${3})
+source: https://ubuntu.com/security/notices/${1}
+EOF

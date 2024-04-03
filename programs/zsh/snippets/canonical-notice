@@ -1,0 +1,15 @@
+curl -s "https://ubuntu.com/security/notices/${1}.json" | jq -r --arg package "${2}" \
+  '.cves | map({
+     id: .id, impact: .impact.baseMetricV3.cvssV3.baseSeverity, packages:
+       .packages | map({
+         name: .name, statuses:
+           .statuses | map(
+             select((.release_codename | contains("jammy")))
+           )
+         })
+        | map(select(.statuses | length > 0))
+        | map(select(.name == $package))
+        | map("\(.name)@\(.statuses[0].description) \(.statuses[0].status)")
+     })
+     | map("- \(.impact) \(.id) - \(.packages[0])")
+     | .[]'

@@ -1,0 +1,6 @@
+cat <<EOF
+Latest Jammy Stemcell: $(bosh-jammy-latest) ships linux kernel: $(bosh-jammy-packages | grep -e 'linux-image-5.15' | xargs | cut -d' ' -f3)
+${1} contains the following CVE patches:
+$(canonical-notice ${1} linux)
+source: https://ubuntu.com/security/notices/${1}
+EOF
