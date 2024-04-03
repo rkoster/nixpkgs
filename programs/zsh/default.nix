@@ -42,7 +42,7 @@
     be = "bundle exec ";
     ber = "bundle exec rspec ";
     intoto-inspect = "jq -r .payload | base64 -d | jq .";
-    colima-start = "colima start --cpu 8 --memory 8 --disk 200 --arch x86_64 --vm-type vz --mount-type=virtiofs";
+    colima-start = "colima start --cpu 8 --memory 8 --disk 200 --arch x86_64 --vm-type vz --mount-type=virtiofs; colima ssh -- sudo chmod 666 /var/run/docker.sock";
     colima-delete = "colima stop --force && colima delete --force";
     smith-auth = ''
       export TOOLSMITHS_API_TOKEN=$(lpass show --notes "Shared-BOSH Core (Pivotal Only)/toolsmiths-api-token" | head -n1 | cut -d'"' -f2)
