@@ -1,0 +1,7 @@
+for pool in $(shepherd list pool --namespace official --json \
+                  | jq -r 'map(select(.template | contains("tas")) | .name).[]'); do
+    echo "${pool}:"
+    for env in $(shepherd list environment --namespace official --pool $pool --json | jq -r '.[].id'); do
+        shepherd get environment $env --json | jq -r '"  \(.id) - \(.status): \(.status_msg)"'
+    done
+done
