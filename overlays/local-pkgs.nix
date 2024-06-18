@@ -32,4 +32,5 @@ self: super:
   shepherd = super.callPackage ../pkgs/shepherd { };
   kiln = super.callPackage ../pkgs/kiln { };
   gosub = super.callPackage ../pkgs/gosub { };
+  imgpkg = super.callPackage ../pkgs/imgpkg { };
 }
