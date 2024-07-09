@@ -23,6 +23,7 @@
     ipcalc
     openssh
     watch
+    hwatch
     wget
     nmap
     arp-scan
