@@ -1,1 +1,1 @@
-cat ~/.ghr-cache.json | fzf | xargs -I{} open https://github.com/{}
+cat ~/.ghr-cache.json | fzf | xargs -I{} open https://{}
