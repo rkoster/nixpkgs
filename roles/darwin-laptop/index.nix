@@ -22,6 +22,7 @@
     pwgen
     ipcalc
     openssh
+    jre_minimal # needed by Synopsys Detect
     watch
     hwatch
     wget
@@ -31,6 +32,7 @@
     git-duet
     comma
     jless
+    openapi-tui
     colima
     docker
     kubectl
@@ -45,7 +47,6 @@
     # language server
     gopls # go
     yaml-language-server # yaml
-    rnix-lsp # nix
     solargraph # ruby
     nodePackages.bash-language-server # bash
 
