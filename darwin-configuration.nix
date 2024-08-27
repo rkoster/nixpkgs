@@ -16,7 +16,7 @@ in {
   services.nix-daemon.enable = true;
 
   nix = {
-    # package = pkgs.nix_2_4;
+    # package = pkgs.nix_2_19;
     # does not work yet because https://github.com/LnL7/nix-darwin/issues/158
     # tmp workaround in ~/.zshrc
     nixPath = [
@@ -40,12 +40,9 @@ in {
 
   security.pam.enableSudoTouchIdAuth = true;
 
-  fonts = {
-    fontDir.enable = true;
-    fonts = [
-      pkgs.hack-font
-    ];
-  };
+  fonts.packages = [
+    pkgs.hack-font
+  ];
 
   # to load darwin-rebuild via /etc/static/zshrc
   # further configuration via home-manager
