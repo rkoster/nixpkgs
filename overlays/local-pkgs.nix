@@ -33,4 +33,7 @@ self: super:
   kiln = super.callPackage ../pkgs/kiln { };
   gosub = super.callPackage ../pkgs/gosub { };
   imgpkg = super.callPackage ../pkgs/imgpkg { };
+  kbld = super.callPackage ../pkgs/kbld { };
+  pivnet = super.callPackage ../pkgs/pivnet { };
+  ctr = super.callPackage ../pkgs/ctr { };
 }

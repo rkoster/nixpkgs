@@ -1,19 +1,23 @@
-{ buildGoModule, fetchFromGitHub, stdenv, lib, writeText }:
+{ buildGoModule, fetchFromGitHub, installShellFiles, stdenv, lib, writeText }:
 
 buildGoModule rec {
   pname = "bosh";
   version = "7.5.3";
 
   src = fetchFromGitHub {
-    owner = "cloudfoundry";
+    #  owner = "cloudfoundry";
+    owner = "kinjelom";
     repo = "bosh-cli";
-    rev = "v${version}";
-    sha256 = "sha256-G9622QudxCUKJpHoezfpSjLFsX9H4m65lacoMATWyAA=";
+    # rev = "v${version}";
+    rev = "cf9d1abb38b07547f37e8da356d5e41fa3e82cdf";
+    sha256 = "sha256-20uOv8wmMaTN3ZJBMjC09Cblo78cuVK+XczKbbh82+8=";
   };
 
   vendorHash = null;
 
   doCheck = false;
+
+  nativeBuildInputs = [ installShellFiles ];
 
   preBuild = ''
     sed -i 's/\[DEV BUILD\]/'"${version}-nix"'/' cmd/version.go
@@ -27,12 +31,12 @@ buildGoModule rec {
      mv main bosh
   '';
 
-  # postInstall = ''
-  #   installShellCompletion --cmd aws \
-  #     --zsh $out/bin/aws_zsh_completer.sh
-  # '' + lib.optionalString (!stdenv.hostPlatform.isWindows) ''
-  #   rm $out/bin/aws.cmd
-  # '';
+  postInstall = ''
+    installShellCompletion --cmd bosh \
+      --bash <($out/bin/bosh completion bash) \
+      --fish <($out/bin/bosh completion fish) \
+      --zsh <($out/bin/bosh completion zsh)
+  '';
 
   meta = with lib; {
     description = "BOSH CLI v2+";

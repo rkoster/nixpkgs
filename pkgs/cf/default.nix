@@ -1,17 +1,17 @@
-{ buildGoModule, fetchFromGitHub, stdenv, lib, writeText }:
+{ buildGo122Module, fetchFromGitHub, stdenv, lib, writeText }:
 
-buildGoModule rec {
+buildGo122Module rec {
   pname = "cf";
-  version = "6.53.0";
+  version = "8.7.10";
 
   src = fetchFromGitHub {
     owner = "cloudfoundry";
     repo = "cli";
-    rev = "f4eef72"; # "v${version}";
-    sha256 = "0g7ripvyg89f831bvc53svhaw4ck3xclkcz93hc2rlfy0029mr1k";
+    rev = "v${version}";
+    sha256 = "sha256-hzXNaaL6CLVRIy88lCJ87q0V6A+ld1GPDcUagsvMXY0=";
   };
 
-  vendorHash = null;
+  vendorHash = "sha256-zDE+9OsnX3S7SPTVW3hR1rO++6Wdk00zy2msu+jUNlw=";
 
   doCheck = false;
 
