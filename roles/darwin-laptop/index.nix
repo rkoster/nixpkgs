@@ -33,10 +33,12 @@
     comma
     jless
     openapi-tui
+    packer
     colima
     docker
     kubectl
     gh
+    devbox
 
     coreutils # so realpath is globally available
     gcc # needed for emacs-nix-mode (otherwise triggers osx developer tools promt)
@@ -49,6 +51,10 @@
     yaml-language-server # yaml
     solargraph # ruby
     nodePackages.bash-language-server # bash
+
+    ollama
+
+    ghostty
 
     dyff
     bosh
