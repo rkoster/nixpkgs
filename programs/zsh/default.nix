@@ -13,7 +13,7 @@
   initExtra =
     ''
     export XDG_CONFIG_HOME=${config.xdg.configHome}
-    export XDG_RUNTIME_DIR=${config.xdg.runtimeDir}
+    export XDG_RUNTIME_DIR="$HOME/Library/Caches/TemporaryItems"
     export EMACS_SOCKET_NAME="emacs-$(tmux display-message -p '#{window_id}' | tr -d @)-server"
 
     if [ -e "$HOME/.nix-defexpr/channels" ]; then
@@ -71,10 +71,7 @@
         | xargs -L1 shepherd delete lease --namespace official
     '';
     nix-update =''
-      sudo -H nix-channel --update;
-      source ~/.zshrc;
-      nix-channel --update;
-      darwin-rebuild switch;
+      darwin-rebuild switch --flake ~/.config/nixpkgs/
       source ~/.zshrc;
       tmux source-file ~/.config/tmux/tmux.conf;
       '';

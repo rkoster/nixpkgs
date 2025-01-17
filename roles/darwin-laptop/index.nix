@@ -1,8 +1,10 @@
-{ config, pkgs, ... }:
+{ username, inputs, config, pkgs, ... }:
 
-{
-  home.username = config.home.username;
-  home.homeDirectory = config.home.homeDirectory;
+let
+  homeDir = "/Users/" + username;
+in {
+  home.username = username;
+  home.homeDirectory = homeDir;
 
   imports = [
     ../../programs/zsh/sources.nix
@@ -17,7 +19,7 @@
   home.packages = with pkgs; [
     jq
     ripgrep
-    lnav
+    # lnav
     tree
     pwgen
     ipcalc
@@ -43,7 +45,7 @@
     coreutils # so realpath is globally available
     gcc # needed for emacs-nix-mode (otherwise triggers osx developer tools promt)
 
-    _1password
+    _1password-cli
     lastpass-cli
 
     # language server
@@ -54,14 +56,14 @@
 
     ollama
 
-    ghostty
+    # inputs.ghostty.packages.x86_64-darwin.default
 
     dyff
     bosh
-    smith
+    # smith
     shepherd
     om
-    bosh-bootloader
+    # bosh-bootloader
     ytt
     cf
     spruce
@@ -121,10 +123,11 @@
 
   programs.starship = import ../../programs/starship/default.nix;
   programs.broot = import ../../programs/broot/default.nix;
-  programs.zsh = import ../../programs/zsh/default.nix { config = config; pkgs = pkgs; };
-  programs.emacs = import ../../programs/emacs/default.nix { pkgs = pkgs; };
-  programs.tmux = import ../../programs/tmux/default.nix { pkgs = pkgs; };
-  programs.kitty = import ../../programs/kitty/default.nix { pkgs = pkgs; };
+  programs.zsh = import ../../programs/zsh/default.nix { inherit config pkgs; };
+  programs.emacs = import ../../programs/emacs/default.nix { inherit pkgs; };
+  programs.tmux = import ../../programs/tmux/default.nix { inherit pkgs; };
+  # programs.kitty = import ../../programs/kitty/default.nix { pkgs = pkgs; };
+  programs.ghostty = import ../../programs/ghostty/default.nix { inherit homeDir pkgs; };
 
   home.stateVersion = "21.03";
 }

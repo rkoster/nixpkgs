@@ -1,18 +1,6 @@
-{ config, pkgs, ... }:
+{ username, pkgs, system, ... }:
 
-let
-  username = builtins.getEnv "USER";
-  localOverlays = let path = ./overlays; in with builtins;
-          map (n: import (path + ("/" + n)))
-            (filter (n: match ".*\\.nix" n != null )
-              (attrNames (readDir path)));
-  emacsOverlay = [
-    (import (builtins.fetchTarball {
-      url = https://github.com/nix-community/emacs-overlay/archive/master.tar.gz;
-    }))
-  ];
-in {
-
+{
   system.stateVersion = 5;
   ids.gids.nixbld = 30000;
 
@@ -35,12 +23,6 @@ in {
     configureBuildUsers = true;
   };
 
-  nixpkgs.overlays = localOverlays ++ emacsOverlay;
-
-  nixpkgs.config.allowUnfree = true;
-
-  imports = [ ./home.nix ];
-
   security.pam.enableSudoTouchIdAuth = true;
 
   fonts.packages = [
@@ -49,6 +31,7 @@ in {
 
   # to load darwin-rebuild via /etc/static/zshrc
   # further configuration via home-manager
+  # programs.home-manager.enable = true;
   programs.zsh.enable = true;
   services.lorri.enable = true;
 
