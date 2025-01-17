@@ -2,15 +2,15 @@
 
 buildGoModule rec {
   pname = "shepherd";
-  version = "0.7.6";
+  version = "0.7.7";
 
   src = builtins.fetchGit {
-    url = "git@gitlab.eng.vmware.com:shepherd/shepherd2.git";
+    url = "git@github.gwd.broadcom.net:TNZ/shepherd2.git";
     ref = "main";
-    rev = "1388fdf71dff41f258ee40d257cdd88ab840f76e"; # 0.7.6
-  };  
+    rev = "b2e46d058c2b3e164096b53ec6b2b3678f7eee8d";
+  }; 
 
-  vendorHash = "sha256-Kq1Dgt61q2C933GzzjHP7QRx4lD7dqz7embnSBTItxU=";
+  vendorHash = "sha256-m5E+05OZW1THyjjHS6SnLJU4+2jeO+SMWLPkotVJ7SM=";
 
   doCheck = false;
 
