@@ -36,4 +36,5 @@ self: super:
   kbld = super.callPackage ../pkgs/kbld { };
   pivnet = super.callPackage ../pkgs/pivnet { };
   ctr = super.callPackage ../pkgs/ctr { };
+  tanzu-sm-installer = super.callPackage ../pkgs/tanzu-sm-installer { };
 }
