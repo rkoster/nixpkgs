@@ -13,6 +13,9 @@ let
   ];
 in {
 
+  system.stateVersion = 5;
+  ids.gids.nixbld = 30000;
+
   services.nix-daemon.enable = true;
 
   nix = {
