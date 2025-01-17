@@ -2,7 +2,7 @@ self: super:
 
 let
   fly = (versionArg: sha256Arg: vendorHashArg: (
-    super.buildGoModule rec {
+    super.buildGo123Module rec {
       pname = "fly";
       version = versionArg;
 
@@ -39,6 +39,7 @@ let
 in {
   # fly60 = fly "6.0.0" super.lib.fakeHash super.lib.fakeHash;
   # nix-build '<nixpkgs>' -A fly60 # will get you the real sha
+  fly712 = fly "7.12.0" "sha256-lAx9TZVRkPMa5swB74zI0xJ7pbRDApZoens747XcuJk=" super.lib.fakeHash;
   fly711 = fly "7.11.2" "sha256-GopZTVdjnPQZ354UC6USHYew+bzuy2AxagsHeH7wseQ=" "sha256-Tzp4pPaIJ08NkkBBKR4xkMEhQR7K+Egx8aHYeRog0Gk=";
   fly710 = fly "7.10.0" "sha256-KmKIr7Y3CQmv1rXdju6xwUHABqj/dkXpgWc/yNrAza8=" "sha256-lc0okniezfTNLsnCBIABQxSgakRUidsprrEnkH8il2g=";
   fly79 = fly "7.9.1" "sha256-ySyarky92+VSo/KzQFrWeh35KDMTQDV34F5iFrARHJs=" "sha256-Oy1wP82ZhdpGHs/gpfdveOK/jI9yuo0D3JtxjLg+W/w=";

@@ -36,5 +36,7 @@ self: super:
   kbld = super.callPackage ../pkgs/kbld { };
   pivnet = super.callPackage ../pkgs/pivnet { };
   ctr = super.callPackage ../pkgs/ctr { };
+  slackdump = super.callPackage ../pkgs/slackdump { };
+  vulnsvc = super.callPackage ../pkgs/vulnsvc { };
   tanzu-sm-installer = super.callPackage ../pkgs/tanzu-sm-installer { };
 }
