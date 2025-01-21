@@ -60,7 +60,7 @@ in {
 
     dyff
     bosh
-    # smith
+    smith
     shepherd
     om
     # bosh-bootloader

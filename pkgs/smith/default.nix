@@ -16,7 +16,6 @@ buildGoModule rec {
   doCheck = false;
 
   preBuild = ''
-    sed 's/go 1.23.*/go 1.22.0/g' go.mod > go.mod.tmp && mv go.mod{.tmp,}
     sed 's/development build/'"${version}-nix"'/' main.go > main.tmp && mv main{.tmp,.go}
   '';
 
@@ -25,7 +24,7 @@ buildGoModule rec {
   postBuild = ''
      cd "$GOPATH/bin"
      mv main smith
-  ''; 
+  '';
 
   meta = with lib; {
     description = "The community CLI for Toolsmiths";
