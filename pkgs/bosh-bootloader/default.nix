@@ -2,13 +2,14 @@
 
 buildGoModule rec {
   pname = "bosh-bootloader";
-  version = "8.4.1";
+  version = "9.0.29";
 
   src = fetchFromGitHub {
     owner = "cloudfoundry";
     repo = "bosh-bootloader";
     rev = "v${version}";
-    sha256 = "19xr608q9w0sjwi7xagpami9b0x9kwpc78p8d83wfj3l82xd4xkd";
+    sha256 = "sha256-lDUcfJ5HvvLjMisyhvIOrXoIkE2WyuUpFDVOP2R+G/o=";
+    fetchSubmodules = true;
   };
 
   vendorHash = null;
@@ -19,16 +20,7 @@ buildGoModule rec {
     "-X main.Version=v${version}"
   ];
 
-  preBuild = ''
-    go mod init github.com/cloudfoundry/bosh-bootloader
-  '';
-
   subPackages = [ "bbl" ];
-
-  # postBuild = ''
-  #    cd "$GOPATH/bin"
-  #    mv main bosh
-  # ''; 
 
   meta = with lib; {
     description = "Command line utility for standing up a BOSH director on an IAAS of your choice.";

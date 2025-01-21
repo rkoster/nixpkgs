@@ -63,7 +63,7 @@ in {
     smith
     shepherd
     om
-    # bosh-bootloader
+    bosh-bootloader
     ytt
     cf
     spruce
