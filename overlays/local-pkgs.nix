@@ -39,4 +39,5 @@ self: super:
   slackdump = super.callPackage ../pkgs/slackdump { };
   vulnsvc = super.callPackage ../pkgs/vulnsvc { };
   tanzu-sm-installer = super.callPackage ../pkgs/tanzu-sm-installer { };
+  cloud-provider-kind = super.callPackage ../pkgs/cloud-provider-kind { };
 }

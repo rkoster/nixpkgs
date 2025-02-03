@@ -41,6 +41,7 @@ in {
     kubectl
     gh
     devbox
+    earthly
 
     coreutils # so realpath is globally available
     gcc # needed for emacs-nix-mode (otherwise triggers osx developer tools promt)
@@ -57,6 +58,9 @@ in {
     ollama
 
     # inputs.ghostty.packages.x86_64-darwin.default
+
+    kind
+    cloud-provider-kind
 
     dyff
     bosh
