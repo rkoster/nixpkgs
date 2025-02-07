@@ -83,7 +83,22 @@
 
 (use-package nix-mode)
 
-(require 'go-ts-mode)
+(use-package go-mode
+  :ensure t
+  :init
+  (add-hook 'before-save-hook 'gofmt-before-save)
+  (add-hook 'go-mode-hook 'whitespace-mode)
+  (add-hook 'go-mode-hook
+            '(lambda ()
+               (setq-local tab-width 2
+                           indent-tabs-mode 1
+                           whitespace-style '(face trailing lines-char empty space-before-tab space-after-tab))
+               ;; HACK: `whitespace-style' is global, and setting locally doesn't take
+               ;; effect for some reason until `whitespace-mode' is restarted
+               ;; https://emacs.stackexchange.com/questions/54212/whitespace-mode-settings-on-per-major-mode-basis
+               (whitespace-mode 0)
+               (whitespace-mode 1)))
+  :mode ("\\.go\\'" . go-mode))
 
 (use-package terraform-mode
   :ensure t
