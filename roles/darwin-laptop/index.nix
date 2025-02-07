@@ -125,6 +125,10 @@ in {
     enable = true;
   };
 
+  services.ollama = {
+    enable = true;
+  };
+
   programs.starship = import ../../programs/starship/default.nix;
   programs.broot = import ../../programs/broot/default.nix;
   programs.zsh = import ../../programs/zsh/default.nix { inherit config pkgs; };
