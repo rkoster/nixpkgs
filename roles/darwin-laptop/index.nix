@@ -42,6 +42,7 @@ in {
     gh
     devbox
     earthly
+    gnutar
 
     coreutils # so realpath is globally available
     gcc # needed for emacs-nix-mode (otherwise triggers osx developer tools promt)
