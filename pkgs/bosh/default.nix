@@ -1,16 +1,14 @@
-{ buildGoModule, fetchFromGitHub, installShellFiles, stdenv, lib, writeText }:
+{ buildGo123Module, fetchFromGitHub, installShellFiles, stdenv, lib, writeText }:
 
-buildGoModule rec {
+buildGo123Module rec {
   pname = "bosh";
-  version = "7.5.3";
+  version = "7.9.3";
 
   src = fetchFromGitHub {
-    #  owner = "cloudfoundry";
-    owner = "kinjelom";
+    owner = "cloudfoundry";
     repo = "bosh-cli";
-    # rev = "v${version}";
-    rev = "cf9d1abb38b07547f37e8da356d5e41fa3e82cdf";
-    sha256 = "sha256-20uOv8wmMaTN3ZJBMjC09Cblo78cuVK+XczKbbh82+8=";
+    rev = "v${version}";
+    sha256 = "sha256-ESM0DpCW97ulo5U/RCEaiKz1C5FeXflB7f/OlJaRwIQ=";
   };
 
   vendorHash = null;
