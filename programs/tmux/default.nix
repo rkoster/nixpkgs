@@ -18,13 +18,16 @@ in {
   clock24 = true;
   historyLimit = 5000;
   terminal = "screen-256color";
-  plugins = [ gruvbox ];
+  plugins = [{
+    plugin = gruvbox;
+    extraConfig = ''
+    set -g @tmux-gruvbox 'dark256'
+    set -g @tmux-gruvbox-statusbar-alpha 'true'
+    '';
+  }];
   newSession = true;
   shell = "${pkgs.zsh}/bin/zsh";
   extraConfig = ''
-    set -g @tmux-gruvbox 'dark256'
-    set -g @tmux-gruvbox-statusbar-alpha 'true'
-
     # source: https://github.com/egel/dotfiles/blob/main/configuration/.tmux.conf
     # set -g @tmux-gruvbox-statusbar-alpha 'true'
     # set -g @tmux-gruvbox-left-status-a '#S'
@@ -41,7 +44,5 @@ in {
 
     bind -N "bosh create and up2load release" -T root M-R send-keys "bosh -n create-release --force && bosh -n upload-release\n"
     bind -N "tail all bosh logs" -T root M-L send-keys "find /var/vcap/{sys/log,bosh/log,monit} -name *.log -or -name current | xargs tail -f\n"
-
-    run '~/.tmux/plugins/tpm/tpm'
   '';
 }
