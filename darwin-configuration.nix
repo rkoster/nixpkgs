@@ -4,9 +4,8 @@
   system.stateVersion = 5;
   ids.gids.nixbld = 30000;
 
-  services.nix-daemon.enable = true;
-
   nix = {
+    enable = true;
     # package = pkgs.nix_2_19;
     # does not work yet because https://github.com/LnL7/nix-darwin/issues/158
     # tmp workaround in ~/.zshrc
