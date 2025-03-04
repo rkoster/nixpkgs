@@ -42,7 +42,7 @@
     be = "bundle exec ";
     ber = "bundle exec rspec ";
     intoto-inspect = "jq -r .payload | base64 -d | jq .";
-    colima-start = "colima start --cpu 8 --memory 16 --disk 200 --arch x86_64 --vm-type vz --mount-type=virtiofs --mount $TMPDIR; colima ssh -- sudo chmod 666 /var/run/docker.sock";
+    colima-start = "colima start --cpu 8 --memory 16 --disk 200 --arch x86_64 --vm-type vz --mount-type=virtiofs --mount $TMPDIR:w --mount $HOME:w; colima ssh -- sudo chmod 666 /var/run/docker.sock";
     colima-delete = "colima stop --force && colima delete --force";
     smith-auth = ''
       export TOOLSMITHS_API_TOKEN=$(lpass show --notes "Shared-BOSH Core (Pivotal Only)/toolsmiths-api-token" | head -n1 | cut -d'"' -f2)
@@ -54,7 +54,7 @@
     shepherd-tas-claim = ''
       export ENVIRONMENT_LOCK_METADATA=$(mktemp --suffix=-tas-sheperd.json)
       export SHEPHERD_LEASE_ID=$(shepherd create lease \
-        --namespace official --pool ''${TAS_POOL:=tas-5_0} --duration 8h --json | jq -r '.id')
+        --namespace official --pool ''${TAS_POOL:=tas-10_0-lite} --duration 8h --json | jq -r '.id')
       shepherd get lease --namespace official ''${SHEPHERD_LEASE_ID} --interactive
       shepherd get lease --namespace official ''${SHEPHERD_LEASE_ID} --json | jq '.output' > ''${ENVIRONMENT_LOCK_METADATA}
       eval "$(smith bosh)"
