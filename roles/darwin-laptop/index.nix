@@ -59,6 +59,7 @@ in {
     ollama
 
     # inputs.ghostty.packages.x86_64-darwin.default
+    google-cloud-sdk
 
     kind
     cloud-provider-kind
@@ -67,12 +68,20 @@ in {
     bosh
     smith
     shepherd
+    sheepctl
     om
     bosh-bootloader
     ytt
     cf
     spruce
     bundix
+    kiln
+    credhub
+
+    pget
+    imgpkg
+    vendir
+    ytt
   ];
 
   programs.git = {
@@ -83,6 +92,7 @@ in {
       credential = { helper = "osxkeychain"; };
       pull = { rebase = true; };
       init = { defaultBranch = "main"; };
+      push = { autoSetupRemote = true; };
       user = {
         signingkey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFq2Q5tJbPHP1ignMYswvcqt16RVTiznVB6JFaz87fhc";
       };
