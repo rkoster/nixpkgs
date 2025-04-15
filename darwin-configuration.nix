@@ -19,10 +19,9 @@
     extraOptions = ''
       experimental-features = nix-command
     '';
-    configureBuildUsers = true;
   };
 
-  security.pam.enableSudoTouchIdAuth = true;
+  security.pam.services.sudo_local.touchIdAuth = true;
 
   fonts.packages = [
     pkgs.hack-font
