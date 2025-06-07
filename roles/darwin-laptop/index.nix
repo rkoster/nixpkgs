@@ -33,7 +33,7 @@ in {
     aria
     git-duet
     comma
-    jless
+    # jless
     openapi-tui
     packer
     colima
@@ -43,6 +43,10 @@ in {
     devbox
     earthly
     gnutar
+    retry
+
+    sshuttle
+    sshpass
 
     coreutils # so realpath is globally available
     gcc # needed for emacs-nix-mode (otherwise triggers osx developer tools promt)
@@ -56,7 +60,8 @@ in {
     solargraph # ruby
     nodePackages.bash-language-server # bash
 
-    ollama
+    # ollama
+    aider-chat
 
     # inputs.ghostty.packages.x86_64-darwin.default
     google-cloud-sdk
