@@ -3,7 +3,7 @@
 
   inputs = {
     # nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-25.05-darwin";
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/master";
     # home-manager.url = "github:nix-community/home-manager/release-25.05";
     home-manager.url = "github:nix-community/home-manager/master";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
@@ -25,15 +25,15 @@
         system = "x86_64-darwin";
         fly-overlay = import ./overlays/fly-versions.nix;
         local-pkgs-overlay = import ./overlays/local-pkgs.nix;
-        libfaketime-fix-overlay = import ./overlays/libfaketime-fix.nix;
-        texlive-fix-overlay = import ./overlays/texlive-fix.nix;
+        # libfaketime-fix-overlay = import ./overlays/libfaketime-fix.nix;
+        # texlive-fix-overlay = import ./overlays/texlive-fix.nix;
         overlayedPkgs = import inputs.nixpkgs {
           inherit system;
           overlays = [
             fly-overlay
             local-pkgs-overlay
-            libfaketime-fix-overlay
-            texlive-fix-overlay
+            # libfaketime-fix-overlay
+            # texlive-fix-overlay
             inputs.community-emacs.overlay
           ];
           config = {
