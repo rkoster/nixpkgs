@@ -30,6 +30,7 @@
   # to load darwin-rebuild via /etc/static/zshrc
   # further configuration via home-manager
   # programs.home-manager.enable = true;
+  system.primaryUser = username;
   programs.zsh.enable = true;
   services.lorri.enable = true;
 
