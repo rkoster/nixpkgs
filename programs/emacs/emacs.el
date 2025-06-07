@@ -106,32 +106,32 @@
   (add-hook 'terraform-mode-hook #'terraform-format-on-save-mode)
   :mode ("\\.tf\\'" . terraform-mode))
 
-(use-package copilot
-  :vc (:url "https://github.com/copilot-emacs/copilot.el")
-  :init
-  (defun turn-on-copilot-mode ()
-    (interactive)
-    (copilot-mode 1))
+;; (use-package copilot
+;;   :vc (:url "https://github.com/copilot-emacs/copilot.el")
+;;   :init
+;;   (defun turn-on-copilot-mode ()
+;;     (interactive)
+;;     (copilot-mode 1))
 
-  ;; [global-copilot-mode uses entire system memory · Issue #226 · copilot-emacs/copilot.el](https://github.com/copilot-emacs/copilot.el/issues/226)
-  :hook ((text-mode-hook prog-mode-hook) . turn-on-copilot-mode)
+;;   ;; [global-copilot-mode uses entire system memory · Issue #226 · copilot-emacs/copilot.el](https://github.com/copilot-emacs/copilot.el/issues/226)
+;;   :hook ((text-mode-hook prog-mode-hook) . turn-on-copilot-mode)
 
-  :config
-  (add-to-list 'copilot-indentation-alist '(prog-mode 2))
-  (add-to-list 'copilot-indentation-alist '(org-mode 2))
-  (add-to-list 'copilot-indentation-alist '(go-mode 2))
-  (add-to-list 'copilot-indentation-alist '(text-mode 2))
-  (add-to-list 'copilot-indentation-alist '(emacs-lisp-mode 2))
+;;   :config
+;;   (add-to-list 'copilot-indentation-alist '(prog-mode 2))
+;;   (add-to-list 'copilot-indentation-alist '(org-mode 2))
+;;   (add-to-list 'copilot-indentation-alist '(go-mode 2))
+;;   (add-to-list 'copilot-indentation-alist '(text-mode 2))
+;;   (add-to-list 'copilot-indentation-alist '(emacs-lisp-mode 2))
 
-  ;;:defer t
-  ;;:hook (add-hook 'prog-mode-hook 'copilot-mode))
-  :bind (:map copilot-completion-map
-            ("<tab>" . 'copilot-accept-completion)
-            ("TAB" . 'copilot-accept-completion)
-            ("C-TAB" . 'copilot-accept-completion-by-word)
-            ("C-<tab>" . 'copilot-accept-completion-by-word)
-            ("C-n" . 'copilot-next-completion)
-            ("C-p" . 'copilot-previous-completion)))
+;;   ;;:defer t
+;;   ;;:hook (add-hook 'prog-mode-hook 'copilot-mode))
+;;   :bind (:map copilot-completion-map
+;;             ("<tab>" . 'copilot-accept-completion)
+;;             ("TAB" . 'copilot-accept-completion)
+;;             ("C-TAB" . 'copilot-accept-completion-by-word)
+;;             ("C-<tab>" . 'copilot-accept-completion-by-word)
+;;             ("C-n" . 'copilot-next-completion)
+;;             ("C-p" . 'copilot-previous-completion)))
 
   ;;:vc (:url "https://github.com/copilot-emacs/copilot.el"
   ;;          :rev :newest
