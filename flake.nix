@@ -32,7 +32,10 @@
             local-pkgs-overlay
             inputs.community-emacs.overlay
           ];
-          config.allowUnfree = true;
+          config = {
+            allowUnfree = true;
+            allowUnsupportedSystem = true;
+          };
         };
       in {
         darwinConfigurations = {
