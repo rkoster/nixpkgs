@@ -1,13 +1,13 @@
-{ buildGoModule, fetchFromGitHub, stdenv, lib, writeText }:
+{ buildGo123Module, fetchFromGitHub, stdenv, lib, writeText, pkgs }:
 
-buildGoModule rec {
+buildGo123Module rec {
   pname = "vulnsvc";
-  version = "v1.0.0-alpha.8";
+  version = "v1.0.0-alpha.11";
 
   src = builtins.fetchGit {
     url = "git@github.gwd.broadcom.net:TNZ/tvt-cli.git";
     ref = "main";
-    rev = "459470ec747d85f2d70bdc23713c815d47716d4a"; # v1.0.0-alpha.8
+    rev = "66f96f98bf409fda34c806d8da282013492bcc63"; # v1.0.0-alpha.11
   };
 
   vendorHash = lib.fakeHash;
@@ -15,12 +15,18 @@ buildGoModule rec {
   doCheck = false;
 
   preBuild = ''
-    for dir in tvt-jira tvt-cli vulnsvc-cli; do
-      pushd $dir
-      sed 's/go 1.23.*/go 1.22.0/g' go.mod > go.mod.tmp && mv go.mod{.tmp,}
-      popd
-    done
+    export HOME=$(mktemp -d)
+    cat <<EOF > $HOME/.gitconfig
+    [url "git@github.gwd.broadcom.net:"]
+      insteadOf = "https://github.gwd.broadcom.net/"
+    EOF
+    export GOPRIVATE="github.gwd.broadcom.net"
+    export GIT_SSH_COMMAND="${pkgs.openssh}/bin/ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
   '';
+
+  impureEnvVars = lib.fetchers.proxyImpureEnvVars ++ [
+    "GIT_PROXY_COMMAND" "SOCKS_SERVER" "SSH_AUTH_SOCK"
+  ];
 
   ldflags = [
     "-X github.gwd.broadcom.net/tnz/tvt-cli/tvt-cli/pkg/buildmeta.Version=${version}"
