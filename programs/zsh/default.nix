@@ -75,5 +75,8 @@
       source ~/.zshrc;
       tmux source-file ~/.config/tmux/tmux.conf;
       '';
+    nix-flake-update =''
+      nix --extra-experimental-features flakes flake update --flake ~/.config/nixpkgs/
+      '';
   };
 }
