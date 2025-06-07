@@ -9,7 +9,6 @@
     alwaysEnsure = true;
     extraEmacsPackages = epkgs: [
       epkgs.treesit-grammars.with-all-grammars
-      epkgs.copilot
     ];
   });
 }
