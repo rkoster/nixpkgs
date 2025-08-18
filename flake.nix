@@ -21,7 +21,7 @@
     ({ config, inputs, withSystem, ... }: {
       systems = inputs.nixpkgs.lib.systems.flakeExposed;
       flake = let
-        username = "rubenk";
+        username = "rubenkoster";
         system = "x86_64-darwin";
         fly-overlay = import ./overlays/fly-versions.nix;
         local-pkgs-overlay = import ./overlays/local-pkgs.nix;
@@ -43,7 +43,7 @@
         };
       in {
         darwinConfigurations = {
-          "C02F12Y8MD6R" = inputs.nix-darwin.lib.darwinSystem {
+          "Rubens-MacBook-Pro" = inputs.nix-darwin.lib.darwinSystem {
             inherit system;
             modules = [
               ./darwin-configuration.nix

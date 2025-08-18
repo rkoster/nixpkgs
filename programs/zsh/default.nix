@@ -10,7 +10,7 @@
     share = true;
     size = 1000000000;
   };
-  initExtra =
+  initContent =
     ''
     export XDG_CONFIG_HOME=${config.xdg.configHome}
     export XDG_RUNTIME_DIR="$HOME/Library/Caches/TemporaryItems"
@@ -19,6 +19,8 @@
     if [ -e "$HOME/.nix-defexpr/channels" ]; then
       export NIX_PATH="$HOME/.nix-defexpr/channels''${NIX_PATH:+:$NIX_PATH}"
     fi
+
+    export ZSH_DISABLE_COMPFIX=true
 
     # Workaround till https://github.com/LnL7/nix-darwin/issues/158 is fixed
     export NIX_PATH="darwin-config=$HOME/.config/nixpkgs/darwin-configuration.nix:nixpkgs-overlays=$HOME/.config/nixpkgs/overlays:/nix/var/nix/profiles/per-user/root/channels''${NIX_PATH:+:$NIX_PATH}"
@@ -71,7 +73,7 @@
         | xargs -L1 shepherd delete lease --namespace official
     '';
     nix-update =''
-      darwin-rebuild switch --flake ~/.config/nixpkgs/
+      sudo nix run --extra-experimental-features flakes nix-darwin/master#darwin-rebuild -- switch --flake ~/.config/nixpkgs
       source ~/.zshrc;
       tmux source-file ~/.config/tmux/tmux.conf;
       '';

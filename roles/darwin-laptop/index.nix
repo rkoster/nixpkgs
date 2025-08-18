@@ -61,7 +61,8 @@ in {
     nodePackages.bash-language-server # bash
 
     # ollama
-    aider-chat
+    aider-chat-full
+    opencode
 
     # inputs.ghostty.packages.x86_64-darwin.default
     google-cloud-sdk
@@ -71,16 +72,16 @@ in {
 
     dyff
     bosh
-    smith
-    shepherd
-    sheepctl
+    # smith
+    # shepherd
+    # sheepctl
     om
     bosh-bootloader
     ytt
     cf
     spruce
     bundix
-    kiln
+    # kiln
     credhub
 
     pget
@@ -107,8 +108,12 @@ in {
       };
       commit = { gpgsign = true; };
       tag = { gpgsign = true; };
+      safe = { directory = "*"; };
     };
-    ignores = [ "*~" ];
+    ignores = [
+      "*~"
+      ".aider*"
+    ];
     lfs.enable = true;
   };
 

@@ -2,13 +2,15 @@
 
 {
   system.stateVersion = 5;
-  ids.gids.nixbld = 30000;
+  # ids.gids.nixbld = 30000;
+  ids.gids.nixbld = 350;
 
   nix = {
     enable = true;
     # package = pkgs.nix_2_19;
     # does not work yet because https://github.com/LnL7/nix-darwin/issues/158
     # tmp workaround in ~/.zshrc
+    channel.enable = false;
     nixPath = [
       { nixpkgs-overlays = "\$HOME/.config/nixpkgs/overlays"; }
       { darwin-config = "\$HOME/.config/nixpkgs/darwin-configuration.nix"; }
