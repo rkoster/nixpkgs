@@ -61,7 +61,7 @@ in {
     nodePackages.bash-language-server # bash
 
     # ollama
-    aider-chat-full
+    # aider-chat-full
     opencode
 
     # inputs.ghostty.packages.x86_64-darwin.default
