@@ -21,13 +21,17 @@
     ({ config, inputs, withSystem, ... }: {
       systems = inputs.nixpkgs.lib.systems.flakeExposed;
       flake = let
-        username = "rubenkoster";
-        system = "x86_64-darwin";
+        darwinUsername = "rubenkoster";
+        darwinSystem = "x86_64-darwin";
+        linuxUsername = "ruben";
+        linuxSystem = "x86_64-linux";
+
         fly-overlay = import ./overlays/fly-versions.nix;
         local-pkgs-overlay = import ./overlays/local-pkgs.nix;
         # libfaketime-fix-overlay = import ./overlays/libfaketime-fix.nix;
         # texlive-fix-overlay = import ./overlays/texlive-fix.nix;
-        overlayedPkgs = import inputs.nixpkgs {
+
+        mkOverlayedPkgs = system: import inputs.nixpkgs {
           inherit system;
           overlays = [
             fly-overlay
@@ -41,27 +45,45 @@
             allowUnsupportedSystem = true;
           };
         };
-      in {
-        darwinConfigurations = {
-          "Rubens-MacBook-Pro" = inputs.nix-darwin.lib.darwinSystem {
-            inherit system;
-            modules = [
-              ./darwin-configuration.nix
-              inputs.home-manager.darwinModules.home-manager {
-                home-manager = {
-                  useUserPackages = false;
-                  useGlobalPkgs = true;
-                  users = builtins.listToAttrs [{
-                    name = username;
-                    value  = import ./roles/darwin-laptop/index.nix;
-                  }];
-                  extraSpecialArgs = { inherit inputs username; };
-                };
-              }
-            ];
-            specialArgs = { pkgs = overlayedPkgs; inherit inputs system username; };
-          };
-        };
+
+        darwinPkgs = mkOverlayedPkgs darwinSystem;
+        linuxPkgs = mkOverlayedPkgs linuxSystem;
+       in {
+         darwinConfigurations = {
+           "Rubens-MacBook-Pro" = inputs.nix-darwin.lib.darwinSystem {
+             system = darwinSystem;
+             modules = [
+               ./darwin-configuration.nix
+               inputs.home-manager.darwinModules.home-manager {
+                 home-manager = {
+                   useUserPackages = false;
+                   useGlobalPkgs = true;
+                   users = builtins.listToAttrs [{
+                     name = darwinUsername;
+                     value  = import ./roles/darwin-laptop/index.nix;
+                   }];
+                   extraSpecialArgs = { inherit inputs; username = darwinUsername; };
+                 };
+               }
+             ];
+             specialArgs = { pkgs = darwinPkgs; inherit inputs; system = darwinSystem; username = darwinUsername; };
+           };
+         };
+
+         homeConfigurations = {
+           "ruben" = inputs.home-manager.lib.homeManagerConfiguration {
+             pkgs = linuxPkgs;
+             modules = [
+               ./roles/linux-workstation/index.nix
+               ({...}: {
+                 home.username = linuxUsername;
+                 home.homeDirectory = "/home/ruben";
+                 home.stateVersion = "21.03";
+               })
+             ];
+             extraSpecialArgs = { inherit inputs; username = linuxUsername; };
+           };
+         };
       #   homeConfigurations.rubenk = inputs.home.lib.homeManagerConfiguration {
       #     pkgs = overlayedPkgs;
       #     modules = [
