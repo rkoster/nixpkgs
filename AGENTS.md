@@ -1,11 +1,11 @@
 # Agent Guidelines for Nix Configuration Repository
 
 ## Build/Test Commands
-- **Full rebuild**: `darwin-rebuild switch` (macOS) or `home-manager switch --flake ~/.config/nixpkgs#ruben` (Linux)
+- **Full rebuild**: `darwin-rebuild switch` (macOS) or `nix run --extra-experimental-features flakes home-manager/master#home-manager -- switch --flake ~/.config/home-manager` (Linux)
 - **Flake update**: `nix flake update`
 - **Test single package**: `nix build .#<package-name>` (e.g., `nix build .#bosh`)
 - **Check flake**: `nix flake check`
-- **Dry run**: `darwin-rebuild switch --dry-run` (macOS) or `home-manager switch --dry-run --flake ~/.config/nixpkgs#ruben` (Linux)
+- **Dry run**: `darwin-rebuild switch --dry-run` (macOS) or `nix run --extra-experimental-features flakes home-manager/master#home-manager -- switch --dry-run --flake ~/.config/home-manager` (Linux)
 - **Manual package access**: If packages aren't in PATH, find them with `find /nix/store -name "bin" -type d | xargs -I {} sh -c 'ls -la {}/<package> >/dev/null 2>&1 && echo {}'`
 
 ## Code Style Guidelines

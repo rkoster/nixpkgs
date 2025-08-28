@@ -1,5 +1,22 @@
 { config, pkgs }:
 
+let
+  # Detect platform based on system
+  isDarwin = pkgs.stdenv.isDarwin;
+  isLinux = pkgs.stdenv.isLinux;
+  
+  # Platform-specific nix-update command
+  nixUpdateCommand = if isDarwin then ''
+    sudo nix run --extra-experimental-features flakes nix-darwin/master#darwin-rebuild -- switch --flake ~/.config/nixpkgs
+    source ~/.zshrc;
+    tmux source-file ~/.config/tmux/tmux.conf;
+  '' else ''
+    nix run --extra-experimental-features flakes home-manager/master#home-manager -- switch --flake ~/.config/home-manager
+    source ~/.zshrc;
+    tmux source-file ~/.config/tmux/tmux.conf;
+  '';
+in
+
 {
   enable = true;
   autosuggestion.enable = true;
@@ -72,11 +89,7 @@
         | jq -r --arg user $(whoami) 'map(select(.user | contains($user)))[0].identifier' \
         | xargs -L1 shepherd delete lease --namespace official
     '';
-    nix-update =''
-      sudo nix run --extra-experimental-features flakes nix-darwin/master#darwin-rebuild -- switch --flake ~/.config/nixpkgs
-      source ~/.zshrc;
-      tmux source-file ~/.config/tmux/tmux.conf;
-      '';
+    nix-update = nixUpdateCommand;
     nix-flake-update =''
       nix --extra-experimental-features flakes flake update --flake ~/.config/nixpkgs/
       '';
