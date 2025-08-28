@@ -9,6 +9,7 @@ in {
   imports = [
     ../../programs/zsh/sources.nix
     ../../programs/emacs/sources.nix
+    ../../programs/opencode
   ];
 
   home.language = {

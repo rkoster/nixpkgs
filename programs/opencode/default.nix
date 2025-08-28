@@ -8,9 +8,6 @@
       model = "claude-sonnet-4";
       small_model = "o4-mini";
       
-      # API provider settings
-      provider = "github";
-      
       # Optional: Temperature setting for responses
       temperature = 0.7;
       
@@ -43,7 +40,7 @@
         maxSize = "1GB";
       };
       
-      # Configure multiple GitHub models
+      # Configure GitHub provider with multiple models
       provider = {
         github = {
           models = {
