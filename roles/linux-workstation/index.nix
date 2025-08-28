@@ -53,6 +53,7 @@ in {
 
     _1password-cli
     lastpass-cli
+    inputs.git-credential-1password.packages.${pkgs.system}.git-credential-1password
 
     # language server
     gopls # go
@@ -105,6 +106,9 @@ in {
       commit = { gpgsign = true; };
       tag = { gpgsign = true; };
       safe = { directory = "*"; };
+      credential = {
+        helper = "${inputs.git-credential-1password.packages.${pkgs.system}.git-credential-1password}/bin/git-credential-1password";
+      };
     };
     ignores = [
       "*~"
@@ -121,8 +125,14 @@ in {
 
   programs.ssh = {
     enable = true;
-    compression = true;
-    forwardAgent = false;
+    matchBlocks."*" = {
+      compression = true;
+      forwardAgent = false;
+    };
+    extraConfig = ''
+      Host *
+        IdentityAgent ~/.1password/agent.sock
+    '';
   };
 
   programs.fzf = {

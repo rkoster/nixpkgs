@@ -95,6 +95,26 @@
         "type": "github"
       }
     },
+    "git-credential-1password": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1751898983,
+        "narHash": "sha256-RMML8oVOArLP0VOlsieyKkZ3qT31YSKTjru5kEmd750=",
+        "owner": "ethrgeist",
+        "repo": "git-credential-1password",
+        "rev": "44fd91c7738482846f2c53d33820d44ca92d0d0f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "ethrgeist",
+        "repo": "git-credential-1password",
+        "type": "github"
+      }
+    },
     "home-manager": {
       "inputs": {
         "nixpkgs": [
@@ -215,6 +235,7 @@
         "community-emacs": "community-emacs",
         "flake-parts": "flake-parts",
         "ghostty": "ghostty",
+        "git-credential-1password": "git-credential-1password",
         "home-manager": "home-manager",
         "nix-darwin": "nix-darwin",
         "nixpkgs": "nixpkgs_3"
