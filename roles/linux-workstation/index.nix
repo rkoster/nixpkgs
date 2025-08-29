@@ -146,10 +146,19 @@ in {
     enableZshIntegration = true;
   };
 
+  home.file.".local/bin/1password-launcher" = {
+    text = ''
+      #!/bin/sh
+      # Disable sandbox to avoid Chrome sandbox permission issues
+      exec ${config.home.profileDirectory}/bin/1password --no-sandbox "$@"
+    '';
+    executable = true;
+  };
+
   home.file.".local/share/applications/1password.desktop".text = ''
     [Desktop Entry]
     Name=1Password
-    Exec=${config.home.profileDirectory}/bin/1password --no-sandbox %U
+    Exec=${homeDir}/.local/bin/1password-launcher %U
     Terminal=false
     Type=Application
     Icon=1password
