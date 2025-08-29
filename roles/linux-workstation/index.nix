@@ -52,6 +52,7 @@ in {
     gcc # needed for emacs-nix-mode
 
     _1password-cli
+    _1password-gui
     lastpass-cli
     inputs.git-credential-1password.packages.${pkgs.system}.git-credential-1password
 
