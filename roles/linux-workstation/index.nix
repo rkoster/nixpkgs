@@ -131,7 +131,13 @@ in {
     extraConfig = ''
       Host *
         # Using system SSH agent instead of 1Password
+        AddKeysToAgent yes
+        IdentityFile ~/.ssh/Github
     '';
+  };
+
+  services.ssh-agent = {
+    enable = true;
   };
 
   programs.fzf = {
