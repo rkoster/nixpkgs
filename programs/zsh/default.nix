@@ -29,6 +29,9 @@ in
   };
   initContent =
     ''
+    # Add ~/.opencode/bin to PATH to override nix-installed opencode
+    export PATH="$HOME/.opencode/bin:$PATH"
+    
     export XDG_CONFIG_HOME=${config.xdg.configHome}
     export XDG_RUNTIME_DIR="$HOME/Library/Caches/TemporaryItems"
     export EMACS_SOCKET_NAME="emacs-$(tmux display-message -p '#{window_id}' | tr -d @)-server"
