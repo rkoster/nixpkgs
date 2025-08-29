@@ -51,10 +51,8 @@ in {
     coreutils # so realpath is globally available
     gcc # needed for emacs-nix-mode
 
-    _1password-cli
     _1password-gui
     lastpass-cli
-    inputs.git-credential-1password.packages.${pkgs.system}.git-credential-1password
 
     # language server
     gopls # go
@@ -108,7 +106,7 @@ in {
       tag = { gpgsign = true; };
       safe = { directory = "*"; };
       credential = {
-        helper = "${inputs.git-credential-1password.packages.${pkgs.system}.git-credential-1password}/bin/git-credential-1password";
+        helper = "store";
       };
     };
     ignores = [
@@ -132,7 +130,7 @@ in {
     };
     extraConfig = ''
       Host *
-        IdentityAgent ~/.1password/agent.sock
+        # Using system SSH agent instead of 1Password
     '';
   };
 

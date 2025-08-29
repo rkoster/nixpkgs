@@ -14,8 +14,6 @@
     community-emacs.inputs.nixpkgs.follows = "nixpkgs";
     flake-parts.url = "github:hercules-ci/flake-parts";
     ghostty.url = "github:ghostty-org/ghostty";
-    git-credential-1password.url = "github:ethrgeist/git-credential-1password";
-    git-credential-1password.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs = inputs:
