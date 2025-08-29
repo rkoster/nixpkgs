@@ -146,6 +146,19 @@ in {
     enableZshIntegration = true;
   };
 
+  home.file.".local/share/applications/1password.desktop".text = ''
+    [Desktop Entry]
+    Name=1Password
+    Exec=${config.home.profileDirectory}/bin/1password --no-sandbox %U
+    Terminal=false
+    Type=Application
+    Icon=1password
+    StartupWMClass=1Password
+    Comment=Password manager and secure wallet
+    MimeType=x-scheme-handler/onepassword;
+    Categories=Office;
+  '';
+
   programs.noti = {
     enable = true;
   };
