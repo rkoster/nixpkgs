@@ -92,6 +92,9 @@ in {
 
     # Mac-style keybindings
     kinto
+
+    # For input device configuration
+    xorg.xinput
   ];
 
   programs.git = {
@@ -185,6 +188,32 @@ in {
 
   services.ollama = {
     enable = true;
+  };
+
+  # Enable natural scrolling (reverse scroll direction)
+  home.pointerCursor = {
+    package = pkgs.vanilla-dmz;
+    name = "Vanilla-DMZ";
+    x11.enable = true;
+  };
+
+  # Configure xinput for natural scrolling
+  home.sessionVariables = {
+    XINPUT_NATURAL_SCROLLING = "1";
+  };
+
+  # Script to set natural scrolling on session start
+  home.file.".local/bin/setup-natural-scrolling" = {
+    text = ''
+      #!/bin/bash
+      # Find all pointer devices and enable natural scrolling
+      xinput list --id-only | while read -r id; do
+        if xinput list-props "$id" 2>/dev/null | grep -q "Natural Scrolling Enabled"; then
+          xinput set-prop "$id" "libinput Natural Scrolling Enabled" 1
+        fi
+      done
+    '';
+    executable = true;
   };
 
   programs.starship = import ../../programs/starship/default.nix;

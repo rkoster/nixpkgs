@@ -93,6 +93,16 @@ systemctl --user enable --now kinto
 
 This enables Mac-style keyboard shortcuts (Cmd+C/V, etc.) and Emacs-style text editing keybindings that work globally across all Linux applications, with terminals properly excluded.
 
+### Natural Scrolling (Reverse Scroll Direction)
+
+Natural scrolling is enabled by default on Linux. If you need to manually apply it after login, run:
+
+```bash
+~/.local/bin/setup-natural-scrolling
+```
+
+This configures all pointing devices to use natural scrolling (scroll down moves content down, matching macOS behavior).
+
 ## Updating Configuration
 
 ### macOS
