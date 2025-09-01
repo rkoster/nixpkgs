@@ -41,4 +41,5 @@ self: super:
   tanzu-sm-installer = super.callPackage ../pkgs/tanzu-sm-installer { };
   cloud-provider-kind = super.callPackage ../pkgs/cloud-provider-kind { };
   sheepctl = super.callPackage ../pkgs/sheepctl { };
+  kinto = super.callPackage ../pkgs/kinto { };
 }

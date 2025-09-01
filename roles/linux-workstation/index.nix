@@ -10,6 +10,7 @@ in {
     ../../programs/zsh/sources.nix
     ../../programs/emacs/sources.nix
     ../../programs/opencode
+    (import ../../programs/kinto/default.nix { inherit config pkgs homeDir; })
   ];
 
   home.language = {
@@ -88,6 +89,9 @@ in {
     imgpkg
     vendir
     ytt
+
+    # Mac-style keybindings
+    kinto
   ];
 
   programs.git = {
