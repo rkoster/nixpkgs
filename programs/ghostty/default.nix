@@ -14,10 +14,17 @@
     working-directory = "${homeDir}/workspace";
     command = "${pkgs.tmux}/bin/tmux attach";
     macos-option-as-alt = "left";
-    copy-on-select = true;
+    copy-on-select = "clipboard";
     confirm-close-surface = false;
     fullscreen = true;
     window-decoration = true; # Required for fullscreen
+    app-notifications = "no-clipboard-copy";
+    
+    # Linux-style copy/paste keybindings
+    keybind = [
+      "ctrl+c=copy_to_clipboard"
+      "ctrl+v=paste_from_clipboard"
+    ];
   };
   themes = {
     # based on: https://github.com/wdomitrz/kitty_gruvbox_theme/blob/master/gruvbox_dark_hard.conf
