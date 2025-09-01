@@ -6,7 +6,7 @@
   # https://github.com/ghostty-org/ghostty/blob/main/nix/package.nix#L207-L210
   package = pkgs.zsh;
   enableZshIntegration = true;
-  clearDefaultKeybinds = false;
+  clearDefaultKeybinds = true;
   settings = {
     font-family = "Hack";
     font-size = 13;
@@ -24,6 +24,12 @@
     keybind = [
       "ctrl+c=copy_to_clipboard"
       "ctrl+v=paste_from_clipboard"
+      "super+c=copy_to_clipboard"
+      "super+v=paste_from_clipboard"
+      "cmd+c=copy_to_clipboard"
+      "cmd+v=paste_from_clipboard"
+      "super+q=quit"
+      "cmd+q=quit"
     ];
   };
   themes = {
