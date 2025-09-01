@@ -119,6 +119,10 @@ in
     "org/gnome/shell/keybindings" = {
       toggle-overview = [];  # Disable Super key for overview
     };
+    "org/gnome/shell/extensions/dash-to-dock" = {
+      dock-fixed = false;
+      intellihide = true;
+    };
   };
 
   # Systemd service for Kinto
