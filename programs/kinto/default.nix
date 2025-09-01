@@ -195,6 +195,38 @@ in
         NEED_REBOOT=true
       fi
       echo
+
+      # Setup udev rule to restart Kinto on USB device insertion
+      echo "🔧 Step 2.5: Setting up USB device detection for Kinto restart..."
+      USB_UDEV_RULE="/etc/udev/rules.d/99-kinto-usb-restart.rules"
+      RESTART_SCRIPT="/usr/local/bin/kinto-usb-restart.sh"
+
+      # Create the restart script
+      cat > "$RESTART_SCRIPT" << 'EOF'
+#!/bin/bash
+# Script to restart Kinto for all logged-in users when USB device is inserted
+for user in $(who | awk '{print $1}' | sort -u); do
+    if [ -n "$user" ]; then
+        sudo -u "$user" XDG_RUNTIME_DIR="/run/user/$(id -u "$user")" systemctl --user restart kinto 2>/dev/null || true
+    fi
+done
+EOF
+      chmod +x "$RESTART_SCRIPT"
+
+      USB_RULE_CONTENT="ACTION==\"add\", SUBSYSTEM==\"usb\", RUN+=\"$RESTART_SCRIPT\""
+
+      if [ -f "$USB_UDEV_RULE" ] && grep -q "kinto-usb-restart" "$USB_UDEV_RULE"; then
+        echo "✅ USB restart udev rule already exists"
+      else
+        echo "➕ Creating udev rule for USB device detection..."
+        echo "$USB_RULE_CONTENT" | tee "$USB_UDEV_RULE" > /dev/null
+        echo "🔄 Reloading udev rules..."
+        udevadm control --reload-rules
+        udevadm trigger
+        echo "✅ USB restart udev rule created and applied"
+        NEED_REBOOT=true
+      fi
+      echo
       
       # Check current uinput permissions
       echo "🔍 Step 3: Verifying uinput device permissions..."
@@ -247,11 +279,12 @@ in
       echo "   ls -la /dev/uinput          # Should show group 'input' with rw- permissions"
       echo "   systemctl --user status kinto  # Should show 'active (running)'"
       echo
-      echo "🎹 Once setup is complete, you'll have:"
-      echo "   • Mac-style shortcuts (Cmd+C/V → Ctrl+C/V) in non-terminal apps"
-      echo "   • Emacs keybindings for text editing"
-      echo "   • Terminal apps (including Ghostty) excluded from global bindings"
-      echo
+       echo "🎹 Once setup is complete, you'll have:"
+       echo "   • Mac-style shortcuts (Cmd+C/V → Ctrl+C/V) in non-terminal apps"
+       echo "   • Emacs keybindings for text editing"
+       echo "   • Terminal apps (including Ghostty) excluded from global bindings"
+       echo "   • Automatic Kinto restart when USB devices are plugged in"
+       echo
       
       if [ "$NEED_LOGOUT" = true ] || [ "$NEED_REBOOT" = true ]; then
         echo "⚠️  Setup requires logout/reboot to complete!"
