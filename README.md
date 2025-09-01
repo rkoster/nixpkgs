@@ -63,20 +63,27 @@ cd ~/.config/home-manager
 nix run --extra-experimental-features flakes home-manager/master#home-manager -- switch --flake ~/.config/home-manager
 ```
 
-### Install sudoers rule for Kinto (Mac-style keybindings)
+### Setup Kinto (Mac-style keyboard shortcuts)
 
-After the first home-manager switch, install the sudoers rule to enable Mac-style keyboard shortcuts:
+**⚠️ Important:** After the initial Home Manager setup, run the Kinto post-installation script to configure input permissions and enable Mac-style keyboard shortcuts.
 
-**Option 1: Use the installation script**
 ```bash
-~/.config/kinto/install-sudoers.sh
+~/.local/bin/post-install-kinto
 ```
 
-**Option 2: Manual installation**
+This script will:
+- Add you to the input group for device access
+- Setup udev rules for uinput device permissions
+- Verify Kinto service status
+- Provide clear feedback on what needs to be done
+
+**🔄 Important:** Follow any logout/reboot instructions shown by the script for changes to take effect.
+
+**Manual verification (if needed):**
 ```bash
-sudo cp ~/.config/kinto/10-kinto-xkeysnail /etc/sudoers.d/
-sudo chmod 440 /etc/sudoers.d/10-kinto-xkeysnail
-sudo chown root:root /etc/sudoers.d/10-kinto-xkeysnail
+groups | grep input      # Should show 'input' in your groups
+ls -la /dev/uinput      # Should show group 'input' with rw- permissions
+systemctl --user status kinto  # Should show 'active (running)'
 ```
 
 ### Start Kinto service
@@ -84,7 +91,7 @@ sudo chown root:root /etc/sudoers.d/10-kinto-xkeysnail
 systemctl --user enable --now kinto
 ```
 
-This enables Mac-style keyboard shortcuts (Cmd+C/V, etc.) that work globally across all Linux applications.
+This enables Mac-style keyboard shortcuts (Cmd+C/V, etc.) and Emacs-style text editing keybindings that work globally across all Linux applications, with terminals properly excluded.
 
 ## Updating Configuration
 

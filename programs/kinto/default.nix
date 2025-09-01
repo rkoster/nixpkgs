@@ -1,19 +1,8 @@
 # Kinto - Mac-style keyboard shortcuts for Linux
 { config, pkgs, homeDir, ... }:
 
-{
-  # Disable GNOME Super key overlay (Activities Overview)
-  dconf.settings = {
-    "org/gnome/mutter" = {
-      overlay-key = "";  # Disable Super key overlay
-    };
-    "org/gnome/shell/keybindings" = {
-      toggle-overview = [];  # Disable Super key for overview
-    };
-  };
-
-  # Kinto configuration for Mac-style keybindings  
-  home.file.".config/kinto/kinto.py".text = ''
+let
+  kintoConfig = pkgs.writeText "kinto.py" ''
     # -*- coding: utf-8 -*-
     import re
     from xkeysnail.transform import *
@@ -27,7 +16,7 @@
     })
 
     # Global Mac-style shortcuts for all applications except terminals
-    define_keymap(lambda wm_class: wm_class not in ("Gnome-terminal", "konsole", "URxvt", "XTerm", "kitty", "Alacritty", "Terminator", "x-terminal-emulator"), {
+    define_keymap(lambda wm_class: wm_class not in ("Gnome-terminal", "konsole", "URxvt", "XTerm", "kitty", "Alacritty", "Terminator", "x-terminal-emulator", "ghostty", "") and wm_class, {
         # Copy, Cut, Paste, Undo, Redo
         K("Super-c"): K("C-c"),         # Cmd+C -> Ctrl+C  
         K("Super-x"): K("C-x"),         # Cmd+X -> Ctrl+X
@@ -75,10 +64,39 @@
         # Tab navigation shortcuts
         K("Super-Shift-left_brace"): K("C-Shift-Tab"),   # Cmd+Shift+[ -> Ctrl+Shift+Tab (previous tab)
         K("Super-Shift-right_brace"): K("C-Tab"),        # Cmd+Shift+] -> Ctrl+Tab (next tab)
-    }, "Mac-style Global Shortcuts")
+        
+        # Emacs-style text editing keybindings
+        K("C-a"): K("home"),            # Ctrl+A -> Beginning of line
+        K("C-e"): K("end"),             # Ctrl+E -> End of line
+        K("C-f"): K("right"),           # Ctrl+F -> Forward char
+        K("C-b"): K("left"),            # Ctrl+B -> Backward char
+        K("C-n"): K("down"),            # Ctrl+N -> Next line
+        K("C-p"): K("up"),              # Ctrl+P -> Previous line
+        K("C-d"): K("delete"),          # Ctrl+D -> Delete char
+        K("C-h"): K("backspace"),       # Ctrl+H -> Backspace
+        K("C-k"): [K("Shift-end"), K("C-x")], # Ctrl+K -> Kill line (select to end, cut)
+        K("C-y"): K("C-v"),             # Ctrl+Y -> Yank (paste)
+        K("C-w"): K("C-x"),             # Ctrl+W -> Kill region (cut)
+        K("M-w"): K("C-c"),             # Alt+W -> Copy region
+        K("M-f"): K("C-right"),         # Alt+F -> Forward word
+        K("M-b"): K("C-left"),          # Alt+B -> Backward word
+        K("M-d"): K("C-delete"),        # Alt+D -> Delete word forward
+        K("C-M-h"): K("C-backspace"),   # Ctrl+Alt+H -> Delete word backward
+        K("C-t"): [K("right"), K("Shift-left"), K("C-x"), K("left"), K("C-v")], # Transpose chars
+        K("C-space"): K("Shift-right"), # Ctrl+Space -> Set mark (start selection)
+        K("C-g"): K("esc"),             # Ctrl+G -> Cancel/escape
+        K("C-s"): K("C-f"),             # Ctrl+S -> Search (find)
+        K("C-r"): [K("C-f"), K("C-h")], # Ctrl+R -> Reverse search
+        K("M-backspace"): K("C-backspace"), # Alt+Backspace -> Delete word backward
+        K("C-o"): [K("end"), K("enter"), K("up"), K("end")], # Ctrl+O -> Open line
+        K("C-j"): K("enter"),           # Ctrl+J -> New line
+        K("C-m"): K("enter"),           # Ctrl+M -> Return (same as Enter)
+        K("C-l"): K("C-f3"),            # Ctrl+L -> Recenter (F3 as placeholder)
+        K("M-q"): K("C-j"),             # Alt+Q -> Fill paragraph (Ctrl+J as placeholder)
+    }, "Mac-style Global Shortcuts with Emacs Keybindings")
 
     # Terminal applications - special handling for copy/paste
-    define_keymap(re.compile("Gnome-terminal|konsole|URxvt|XTerm|kitty|Alacritty|Terminator|x-terminal-emulator", re.IGNORECASE), {
+    define_keymap(re.compile("Gnome-terminal|konsole|URxvt|XTerm|kitty|Alacritty|Terminator|x-terminal-emulator|ghostty", re.IGNORECASE), {
         # In terminals, use terminal-specific shortcuts
         K("Super-c"): K("C-Shift-c"),   # Terminal copy
         K("Super-v"): K("C-Shift-v"),   # Terminal paste
@@ -91,74 +109,152 @@
     }, "Terminal Applications")
   '';
 
-  # Enable xhost for root to allow kinto to run
-  home.file.".xprofile".text = ''
-    xhost +SI:localuser:root
-  '';
-
-  # Kinto systemd service  
-  systemd.user.services.kinto = {
-    Unit = {
-      Description = "Kinto - Mac-style shortcuts for Linux";
-      After = [ "graphical-session-pre.target" ];
-      PartOf = [ "graphical-session.target" ];
+in
+{
+  # Disable GNOME Super key overlay (Activities Overview)
+  dconf.settings = {
+    "org/gnome/mutter" = {
+      overlay-key = "";  # Disable Super key overlay
     };
-    Install = {
-      WantedBy = [ "graphical-session.target" ];
-    };
-    Service = {
-      Environment = [
-        "DISPLAY=:0"
-        "XAUTHORITY=${homeDir}/.Xauthority"
-        "XDG_RUNTIME_DIR=/run/user/1000"
-      ];
-      ExecStart = "sudo ${pkgs.kinto}/bin/kinto-xkeysnail ${homeDir}/.config/kinto/kinto.py";
-      Restart = "on-failure";
-      RestartSec = "3";
+    "org/gnome/shell/keybindings" = {
+      toggle-overview = [];  # Disable Super key for overview
     };
   };
 
-  # Create sudoers rule for kinto/xkeysnail
-  home.file.".config/kinto/10-kinto-xkeysnail".text = ''
-    # Allow user to run xkeysnail with sudo without password prompt
-    # This file should be copied to /etc/sudoers.d/10-kinto-xkeysnail
-    # Command: sudo cp ~/.config/kinto/10-kinto-xkeysnail /etc/sudoers.d/
-    ruben ALL=(root) NOPASSWD: ${pkgs.kinto}/bin/kinto-xkeysnail
-  '';
+  # Systemd service for Kinto
+  systemd.user.services.kinto = {
+    Unit = {
+      Description = "Kinto - Mac-style shortcuts and Emacs keybindings for Linux";
+      After = [ "graphical-session-pre.target" ];
+      PartOf = [ "graphical-session.target" ];
+      Wants = [ "graphical-session.target" ];
+    };
 
-  # Installation script for the sudoers rule
-  home.file.".config/kinto/install-sudoers.sh" = {
+    Service = {
+      Type = "exec";
+      ExecStart = "${pkgs.kinto}/bin/kinto-xkeysnail ${kintoConfig}";
+      Restart = "on-failure";
+      RestartSec = "5";
+      Environment = [
+        "DISPLAY=:0"
+      ];
+      PrivateTmp = true;
+      NoNewPrivileges = true;
+    };
+
+    Install = {
+      WantedBy = [ "graphical-session.target" ];
+    };
+  };
+
+  # Add kinto package to environment
+  home.packages = with pkgs; [
+    kinto
+  ];
+
+  # Unified Kinto post-installation script
+  home.file.".local/bin/post-install-kinto" = {
     text = ''
       #!/bin/bash
       set -e
       
-      SUDOERS_FILE="$HOME/.config/kinto/10-kinto-xkeysnail"
-      TARGET_DIR="/etc/sudoers.d"
-      TARGET_FILE="$TARGET_DIR/10-kinto-xkeysnail"
+      echo "🚀 Kinto Post-Installation Setup"
+      echo "================================="
+      echo
       
-      echo "Installing kinto sudoers rule..."
+      # Check if user is already in input group
+      echo "📋 Step 1: Checking input group membership..."
+      if groups | grep -q '\binput\b'; then
+        echo "✅ User is already in the input group"
+      else
+        echo "➕ Adding user to input group..."
+        usermod -a -G input $(whoami)
+        echo "✅ User added to input group"
+        NEED_LOGOUT=true
+      fi
+      echo
       
-      # Check if the source file exists
-      if [ ! -f "$SUDOERS_FILE" ]; then
-        echo "Error: Source file $SUDOERS_FILE not found"
-        exit 1
+      # Setup udev rule for uinput access
+      echo "🔧 Step 2: Setting up uinput permissions..."
+      UDEV_RULE="/etc/udev/rules.d/99-uinput.rules"
+      RULE_CONTENT='KERNEL=="uinput", GROUP="input", MODE="0660"'
+      
+      if [ -f "$UDEV_RULE" ] && grep -q "$RULE_CONTENT" "$UDEV_RULE"; then
+        echo "✅ udev rule already exists and is correct"
+      else
+        echo "➕ Creating udev rule for uinput access..."
+        echo "$RULE_CONTENT" | tee "$UDEV_RULE" > /dev/null
+        echo "🔄 Reloading udev rules..."
+        udevadm control --reload-rules
+        udevadm trigger
+        echo "✅ udev rule created and applied"
+        NEED_REBOOT=true
+      fi
+      echo
+      
+      # Check current uinput permissions
+      echo "🔍 Step 3: Verifying uinput device permissions..."
+      if ls -la /dev/uinput | grep -q "input"; then
+        echo "✅ /dev/uinput has correct group (input)"
+      else
+        echo "⚠️  /dev/uinput permissions may need to be updated"
+        echo "   Current permissions:"
+        ls -la /dev/uinput
+        NEED_REBOOT=true
+      fi
+      echo
+      
+      # Check Kinto service status
+      echo "🔍 Step 4: Checking Kinto service status..."
+      if systemctl --user is-enabled kinto >/dev/null 2>&1; then
+        if systemctl --user is-active kinto >/dev/null 2>&1; then
+          echo "✅ Kinto service is enabled and running"
+        else
+          echo "🔄 Kinto service is enabled but not running. Starting..."
+          systemctl --user start kinto
+          if systemctl --user is-active kinto >/dev/null 2>&1; then
+            echo "✅ Kinto service started successfully"
+          else
+            echo "❌ Failed to start Kinto service. Check logs with:"
+            echo "   journalctl --user -u kinto -f"
+          fi
+        fi
+      else
+        echo "❌ Kinto service is not enabled. Run this after home-manager switch:"
+        echo "   systemctl --user enable --now kinto"
+      fi
+      echo
+      
+      # Final summary
+      echo "📋 Setup Summary"
+      echo "================"
+      
+      if [ "$NEED_LOGOUT" = true ]; then
+        echo "🔄 ACTION REQUIRED: Log out and log back in for group changes to take effect"
       fi
       
-      # Copy the file to sudoers.d
-      sudo cp "$SUDOERS_FILE" "$TARGET_FILE"
+      if [ "$NEED_REBOOT" = true ]; then
+        echo "🔄 RECOMMENDED: Reboot for udev changes to take full effect"
+      fi
       
-      # Set proper permissions
-      sudo chmod 440 "$TARGET_FILE"
-      sudo chown root:root "$TARGET_FILE"
+      echo
+      echo "✅ Verification commands:"
+      echo "   groups | grep input          # Should show 'input' in your groups"
+      echo "   ls -la /dev/uinput          # Should show group 'input' with rw- permissions"
+      echo "   systemctl --user status kinto  # Should show 'active (running)'"
+      echo
+      echo "🎹 Once setup is complete, you'll have:"
+      echo "   • Mac-style shortcuts (Cmd+C/V → Ctrl+C/V) in non-terminal apps"
+      echo "   • Emacs keybindings for text editing"
+      echo "   • Terminal apps (including Ghostty) excluded from global bindings"
+      echo
       
-      # Validate the sudoers file
-      if sudo visudo -c; then
-        echo "Sudoers rule installed successfully!"
-        echo "You can now run: sudo ${pkgs.kinto}/bin/kinto-xkeysnail without a password"
-      else
-        echo "Error: Invalid sudoers configuration detected"
-        sudo rm -f "$TARGET_FILE"
+      if [ "$NEED_LOGOUT" = true ] || [ "$NEED_REBOOT" = true ]; then
+        echo "⚠️  Setup requires logout/reboot to complete!"
         exit 1
+      else
+        echo "🎉 Kinto setup is complete!"
+        exit 0
       fi
     '';
     executable = true;
