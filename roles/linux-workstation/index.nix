@@ -106,6 +106,9 @@ in {
         signingkey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFq2Q5tJbPHP1ignMYswvcqt16RVTiznVB6JFaz87fhc";
       };
       gpg = { format = "ssh"; };
+      "gpg \"ssh\"" = {
+        program = homeDir + "/.nix-profile/bin/op-ssh-sign";
+      };
       commit = { gpgsign = true; };
       tag = { gpgsign = true; };
       safe = { directory = "*"; };
