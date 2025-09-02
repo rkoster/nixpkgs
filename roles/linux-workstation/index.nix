@@ -11,6 +11,8 @@ in {
     ../../programs/emacs/sources.nix
     ../../programs/opencode
     (import ../../programs/kinto/default.nix { inherit config pkgs homeDir; })
+    (import ../../programs/git/default.nix { inherit pkgs homeDir; })
+    (import ../../programs/1password/default.nix { inherit pkgs; })
   ];
 
   home.language = {
@@ -52,7 +54,6 @@ in {
     coreutils # so realpath is globally available
     gcc # needed for emacs-nix-mode
 
-    _1password-gui
     lastpass-cli
 
     # language server
@@ -97,57 +98,10 @@ in {
     xorg.xinput
   ];
 
-  programs.git = {
-    enable = true;
-    userName  = "rkoster";
-    userEmail = "hi@rkoster.dev";
-    extraConfig = {
-      pull = { rebase = true; };
-      init = { defaultBranch = "main"; };
-      push = { autoSetupRemote = true; };
-      user = {
-        signingkey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFq2Q5tJbPHP1ignMYswvcqt16RVTiznVB6JFaz87fhc";
-      };
-      gpg = { format = "ssh"; };
-      "gpg \"ssh\"" = {
-        program = homeDir + "/.nix-profile/bin/op-ssh-sign";
-      };
-      commit = { gpgsign = true; };
-      tag = { gpgsign = true; };
-      safe = { directory = "*"; };
-      credential = {
-        helper = "store";
-      };
-    };
-    ignores = [
-      "*~"
-      ".aider*"
-    ];
-    lfs.enable = true;
-  };
-
   programs.direnv = {
     enable = true;
     enableZshIntegration = true;
     nix-direnv.enable = true;
-  };
-
-  programs.ssh = {
-    enable = true;
-    matchBlocks."*" = {
-      compression = true;
-      forwardAgent = false;
-    };
-    extraConfig = ''
-      Host *
-        # Using system SSH agent instead of 1Password
-        AddKeysToAgent yes
-        IdentityFile ~/.ssh/Github
-    '';
-  };
-
-  services.ssh-agent = {
-    enable = true;
   };
 
   programs.fzf = {
