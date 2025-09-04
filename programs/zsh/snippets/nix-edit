@@ -1,2 +1,2 @@
-find ~/.config/nixpkgs -type f -not -path "*.git*" -exec realpath --relative-to ~/.config/nixpkgs {} \; \
-     | fzf | xargs -I{} emacsclient --no-wait ~/.config/nixpkgs/{}
+find ~/.config/home-manager -type f -not -path "*.git*" -exec realpath --relative-to ~/.config/home-manager {} \; \
+     | fzf | xargs -I{} emacsclient --no-wait ~/.config/home-manager/{}
