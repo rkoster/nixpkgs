@@ -3,6 +3,7 @@
 python3Packages.buildPythonApplication rec {
   pname = "token-count";
   version = "0.2.1";
+  pyproject = true;
 
   src = fetchFromGitHub {
     owner = "felvin-search";
@@ -11,9 +12,12 @@ python3Packages.buildPythonApplication rec {
     sha256 = lib.fakeSha256;
   };
 
-  propagatedBuildInputs = with python3Packages; [
+  build-system = with python3Packages; [
+    setuptools
+  ];
+
+  dependencies = with python3Packages; [
     tiktoken
-    gitignore-parser
   ];
 
   # Skip tests since they require network access
