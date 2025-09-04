@@ -23,6 +23,10 @@ python3Packages.buildPythonApplication rec {
   # Skip tests since they require network access
   doCheck = false;
 
+  # Disable runtime dependency checking for optional dependencies
+  dontWrapPythonPrograms = true;
+  pythonRuntimeDepsCheck = false;
+
   meta = with lib; {
     description = "Count the number of tokens in a text string or file, similar to the Unix 'wc' utility";
     homepage = "https://github.com/felvin-search/token-count";
