@@ -9,7 +9,7 @@ python3Packages.buildPythonApplication rec {
     owner = "felvin-search";
     repo = "token-count";
     rev = "dfdb19af1a96684b7941920016d6394f121bbb89";
-    sha256 = lib.fakeSha256;
+    sha256 = "sha256-wqw25LORMqvjbSukjSjS20q3o4pZ227QQxC5/WGSFE4=";
   };
 
   build-system = with python3Packages; [
