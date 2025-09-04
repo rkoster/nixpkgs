@@ -65,6 +65,7 @@ in {
     # ollama
     # aider-chat-full
     opencode
+    token-count
 
     # inputs.ghostty.packages.x86_64-linux.default
     google-cloud-sdk

@@ -42,4 +42,5 @@ self: super:
   cloud-provider-kind = super.callPackage ../pkgs/cloud-provider-kind { };
   sheepctl = super.callPackage ../pkgs/sheepctl { };
   kinto = super.callPackage ../pkgs/kinto { };
+  token-count = super.callPackage ../pkgs/token-count { };
 }
