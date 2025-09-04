@@ -2,13 +2,13 @@
 
 python3Packages.buildPythonApplication rec {
   pname = "token-count";
-  version = "0.2.1";
+  version = "0.2.1-unstable-2024-03-24";
   pyproject = true;
 
   src = fetchFromGitHub {
     owner = "felvin-search";
     repo = "token-count";
-    rev = "v${version}";
+    rev = "dfdb19af1a96684b7941920016d6394f121bbb89";
     sha256 = lib.fakeSha256;
   };
 
