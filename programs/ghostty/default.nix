@@ -20,10 +20,10 @@
     window-decoration = true; # Required for fullscreen
     app-notifications = "no-clipboard-copy";
     
-    # Copy/paste keybindings (avoiding ctrl+c to preserve interrupt)
+    # Linux-style copy/paste keybindings
     keybind = [
-      "ctrl+shift+c=copy_to_clipboard"
-      "ctrl+shift+v=paste_from_clipboard"
+      "ctrl+c=copy_to_clipboard"
+      "ctrl+v=paste_from_clipboard"
       "super+c=copy_to_clipboard"
       "super+v=paste_from_clipboard"
       "cmd+c=copy_to_clipboard"
