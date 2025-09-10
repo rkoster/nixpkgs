@@ -19,17 +19,39 @@
     fullscreen = true;
     window-decoration = true; # Required for fullscreen
     app-notifications = "no-clipboard-copy";
+    class = "ghostty-terminal";
     
-    # Linux-style copy/paste keybindings
+    # Ghostty handles its own keybindings, Kinto handles the rest
     keybind = [
-      "ctrl+c=copy_to_clipboard"
-      "ctrl+v=paste_from_clipboard"
+      # Standard terminal copy/paste
+      "ctrl+shift+c=copy_to_clipboard"
+      "ctrl+shift+v=paste_from_clipboard"
+      
+      # Mac-style shortcuts for Ghostty
       "super+c=copy_to_clipboard"
       "super+v=paste_from_clipboard"
       "cmd+c=copy_to_clipboard"
       "cmd+v=paste_from_clipboard"
+      
+      # App management
       "super+q=quit"
       "cmd+q=quit"
+      
+      # Tab management
+      "super+t=new_tab"
+      "super+w=close_surface"
+      "cmd+t=new_tab"
+      "cmd+w=close_surface"
+      
+      # Tab navigation
+      "super+shift+left_bracket=previous_tab"
+      "super+shift+right_bracket=next_tab"
+      "cmd+shift+left_bracket=previous_tab"
+      "cmd+shift+right_bracket=next_tab"
+      
+      # Window management
+      "super+n=new_window"
+      "cmd+n=new_window"
     ];
   };
   themes = {

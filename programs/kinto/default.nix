@@ -16,7 +16,7 @@ let
     })
 
     # Global Mac-style shortcuts for all applications except terminals
-    define_keymap(lambda wm_class: wm_class not in ("Gnome-terminal", "konsole", "URxvt", "XTerm", "kitty", "Alacritty", "Terminator", "x-terminal-emulator", "ghostty", "") and wm_class, {
+    define_keymap(lambda wm_class: wm_class not in ("Gnome-terminal", "konsole", "URxvt", "XTerm", "kitty", "Alacritty", "Terminator", "x-terminal-emulator", "ghostty", "com.mitchellh.ghostty", "ghostty-terminal", "") and wm_class, {
         # Copy, Cut, Paste, Undo, Redo
         K("Super-c"): K("C-c"),         # Cmd+C -> Ctrl+C  
         K("Super-x"): K("C-x"),         # Cmd+X -> Ctrl+X
@@ -69,7 +69,7 @@ let
         K("C-a"): K("home"),            # Ctrl+A -> Beginning of line
         K("C-e"): K("end"),             # Ctrl+E -> End of line
         K("C-f"): K("right"),           # Ctrl+F -> Forward char
-        K("C-b"): K("left"),            # Ctrl+B -> Backward char
+        # K("C-b"): K("left"),          # DISABLED: Conflicts with tmux prefix in terminals
         K("C-n"): K("down"),            # Ctrl+N -> Next line
         K("C-p"): K("up"),              # Ctrl+P -> Previous line
         K("C-d"): K("delete"),          # Ctrl+D -> Delete char
@@ -95,8 +95,8 @@ let
         K("M-q"): K("C-j"),             # Alt+Q -> Fill paragraph (Ctrl+J as placeholder)
     }, "Mac-style Global Shortcuts with Emacs Keybindings")
 
-    # Terminal applications - special handling for copy/paste
-    define_keymap(re.compile("Gnome-terminal|konsole|URxvt|XTerm|kitty|Alacritty|Terminator|x-terminal-emulator|ghostty", re.IGNORECASE), {
+    # Terminal applications - special handling for copy/paste (excluding Ghostty)
+    define_keymap(re.compile("Gnome-terminal|konsole|URxvt|XTerm|kitty|Alacritty|Terminator|x-terminal-emulator", re.IGNORECASE), {
         # In terminals, use terminal-specific shortcuts
         K("Super-c"): K("C-Shift-c"),   # Terminal copy
         K("Super-v"): K("C-Shift-v"),   # Terminal paste
@@ -106,6 +106,32 @@ let
         K("Super-w"): K("C-Shift-w"),   # Close tab
         K("Super-Shift-left_brace"): K("C-Page_Up"),     # Previous tab
         K("Super-Shift-right_brace"): K("C-Page_Down"),  # Next tab
+        
+        # Limited Emacs keybindings that don't conflict with tmux
+        K("C-a"): K("home"),            # Ctrl+A -> Beginning of line
+        K("C-e"): K("end"),             # Ctrl+E -> End of line
+        K("C-f"): K("right"),           # Ctrl+F -> Forward char
+        # K("C-b"): K("left"),          # DISABLED: Conflicts with tmux prefix
+        K("C-n"): K("down"),            # Ctrl+N -> Next line
+        K("C-p"): K("up"),              # Ctrl+P -> Previous line
+        K("C-d"): K("delete"),          # Ctrl+D -> Delete char
+        K("C-h"): K("backspace"),       # Ctrl+H -> Backspace
+        K("C-k"): [K("Shift-end"), K("C-Shift-c")], # Ctrl+K -> Kill line (use terminal copy)
+        K("C-y"): K("C-Shift-v"),       # Ctrl+Y -> Yank (use terminal paste)
+        K("C-w"): K("C-Shift-c"),       # Ctrl+W -> Kill region (use terminal copy)
+        K("M-w"): K("C-Shift-c"),       # Alt+W -> Copy region (use terminal copy)
+        K("M-f"): K("C-right"),         # Alt+F -> Forward word
+        # K("M-b"): K("C-left"),        # Alt+B -> Backward word - may conflict with tmux
+        K("M-d"): K("C-delete"),        # Alt+D -> Delete word forward
+        K("C-M-h"): K("C-backspace"),   # Ctrl+Alt+H -> Delete word backward
+        K("C-space"): K("Shift-right"), # Ctrl+Space -> Set mark (start selection)
+        K("C-g"): K("esc"),             # Ctrl+G -> Cancel/escape
+        K("C-s"): K("C-f"),             # Ctrl+S -> Search (find)
+        K("M-backspace"): K("C-backspace"), # Alt+Backspace -> Delete word backward
+        K("C-o"): [K("end"), K("enter"), K("up"), K("end")], # Ctrl+O -> Open line
+        K("C-j"): K("enter"),           # Ctrl+J -> New line
+        K("C-m"): K("enter"),           # Ctrl+M -> Return (same as Enter)
+        K("C-l"): K("C-l"),             # Ctrl+L -> Clear screen (let terminal handle)
     }, "Terminal Applications")
   '';
 
