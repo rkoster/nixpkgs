@@ -6,6 +6,7 @@
 - **Test single package**: `nix build .#<package-name>` (e.g., `nix build .#bosh`)
 - **Check flake**: `nix flake check`
 - **Dry run**: `darwin-rebuild switch --dry-run` (macOS) or `nix run --extra-experimental-features flakes home-manager/master#home-manager -- switch --dry-run --flake ~/.config/home-manager` (Linux)
+- **Search packages**: `nix search nixpkgs <package-name> 2>/dev/null` (e.g., `nix search nixpkgs krunvm 2>/dev/null`)
 - **Manual package access**: If packages aren't in PATH, find them with `find /nix/store -name "bin" -type d | xargs -I {} sh -c 'ls -la {}/<package> >/dev/null 2>&1 && echo {}'`
 
 ## Code Style Guidelines

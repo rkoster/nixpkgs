@@ -10,7 +10,7 @@ in {
     ../../programs/zsh/sources.nix
     ../../programs/emacs/sources.nix
     ../../programs/opencode
-    ../../programs/github-runner-firecracker
+    ../../programs/github-runner-container
     (import ../../programs/kinto/default.nix { inherit config pkgs homeDir; })
     (import ../../programs/git/default.nix { inherit pkgs homeDir; })
     (import ../../programs/1password/default.nix { inherit pkgs; })
@@ -183,11 +183,11 @@ in {
   # programs.kitty = import ../../programs/kitty/default.nix { pkgs = pkgs; };
   programs.ghostty = import ../../programs/ghostty/default.nix { inherit homeDir pkgs; };
 
-  # GitHub Actions Runner with Firecracker
-  programs.github-runner-firecracker = {
+  # GitHub Actions Runner with Kata Containers
+  programs.github-runner-container = {
     enable = true;
-    repository = "ruben/opencode-workspace-action";
-    runnerName = "firecracker-runner-${username}";
+    repository = "rkoster/opencode-workspace-action";
+    runnerName = "kata-runner-${username}";
   };
 
   home.stateVersion = "21.03";
