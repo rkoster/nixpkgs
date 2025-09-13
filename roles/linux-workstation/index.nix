@@ -10,6 +10,7 @@ in {
     ../../programs/zsh/sources.nix
     ../../programs/emacs/sources.nix
     ../../programs/opencode
+    ../../programs/github-runner-firecracker
     (import ../../programs/kinto/default.nix { inherit config pkgs homeDir; })
     (import ../../programs/git/default.nix { inherit pkgs homeDir; })
     (import ../../programs/1password/default.nix { inherit pkgs; })
@@ -97,6 +98,9 @@ in {
 
     # For input device configuration
     xorg.xinput
+    
+    # VM management with Firecracker
+    firecracker
   ];
 
   programs.direnv = {
@@ -178,6 +182,13 @@ in {
   programs.tmux = import ../../programs/tmux/default.nix { inherit pkgs; };
   # programs.kitty = import ../../programs/kitty/default.nix { pkgs = pkgs; };
   programs.ghostty = import ../../programs/ghostty/default.nix { inherit homeDir pkgs; };
+
+  # GitHub Actions Runner with Firecracker
+  programs.github-runner-firecracker = {
+    enable = false; # Set to true when ready to use
+    repository = "your-org/your-repo"; # Update this to your actual repository
+    runnerName = "firecracker-runner-${username}";
+  };
 
   home.stateVersion = "21.03";
 }
