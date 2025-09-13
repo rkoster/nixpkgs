@@ -185,8 +185,8 @@ in {
 
   # GitHub Actions Runner with Firecracker
   programs.github-runner-firecracker = {
-    enable = false; # Set to true when ready to use
-    repository = "your-org/your-repo"; # Update this to your actual repository
+    enable = true;
+    repository = "ruben/opencode-workspace-action";
     runnerName = "firecracker-runner-${username}";
   };
 

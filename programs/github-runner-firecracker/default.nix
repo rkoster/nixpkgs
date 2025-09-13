@@ -87,7 +87,7 @@ in
             fi
             
             # Read GitHub token from file
-            GITHUB_TOKEN=\$(cat ${cfg.tokenFile})
+            GITHUB_TOKEN=$(cat ${cfg.tokenFile})
             
             # Create cloud-init config
             cat > user-data << EOF
@@ -106,7 +106,7 @@ packages:
 runcmd:
   - systemctl enable --now docker
   - usermod -aG docker runner
-  - sudo -u runner bash -c "cd /home/runner && mkdir actions-runner && cd actions-runner && curl -o actions-runner.tar.gz -L https://github.com/actions/runner/releases/download/v2.311.0/actions-runner-linux-x64-2.311.0.tar.gz && tar xzf actions-runner.tar.gz && ./config.sh --url https://github.com/${cfg.repository} --token \$GITHUB_TOKEN --name ${cfg.runnerName} --unattended --labels firecracker,docker,linux,x64 && nohup ./run.sh &"
+  - sudo -u runner bash -c "cd /home/runner && mkdir actions-runner && cd actions-runner && curl -o actions-runner.tar.gz -L https://github.com/actions/runner/releases/download/v2.311.0/actions-runner-linux-x64-2.311.0.tar.gz && tar xzf actions-runner.tar.gz && ./config.sh --url https://github.com/${cfg.repository} --token $GITHUB_TOKEN --name ${cfg.runnerName} --unattended --labels firecracker,docker,linux,x64 && nohup ./run.sh &"
 EOF
             
             # Create network config
