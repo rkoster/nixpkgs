@@ -10,7 +10,7 @@ in {
     ../../programs/zsh/sources.nix
     ../../programs/emacs/sources.nix
     ../../programs/opencode
-    ../../programs/github-runner-container
+    ../../programs/github-runner-multipass
     (import ../../programs/kinto/default.nix { inherit config pkgs homeDir; })
     (import ../../programs/git/default.nix { inherit pkgs homeDir; })
     (import ../../programs/1password/default.nix { inherit pkgs; })
@@ -183,11 +183,15 @@ in {
   # programs.kitty = import ../../programs/kitty/default.nix { pkgs = pkgs; };
   programs.ghostty = import ../../programs/ghostty/default.nix { inherit homeDir pkgs; };
 
-  # GitHub Actions Runner with Kata Containers
-  programs.github-runner-container = {
+  # GitHub Actions Runner with Multipass
+  programs.github-runner-multipass = {
     enable = true;
     repository = "rkoster/opencode-workspace-action";
-    runnerName = "kata-runner-${username}";
+    runnerName = "multipass-runner-${username}";
+    vmMemory = "4G";
+    vmCpus = 2;
+    enableDocker = true;
+    extraLabels = [ "multipass" "vm" "ubuntu" "docker" "nix-host" ];
   };
 
   home.stateVersion = "21.03";
