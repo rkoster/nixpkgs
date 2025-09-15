@@ -77,8 +77,8 @@ in
         
         users:
           - name: runner
+            uid: 1001
             shell: /bin/bash
-            sudo: ALL=(ALL) NOPASSWD:ALL
             groups: [sudo, docker]
             lock_passwd: false
 
@@ -98,6 +98,9 @@ in
         package_upgrade: true
 
         runcmd:
+          # Configure sudo to match upstream Dockerfile
+          - echo "%sudo   ALL=(ALL:ALL) NOPASSWD:ALL" > /etc/sudoers
+          - echo "Defaults env_keep += \"DEBIAN_FRONTEND\"" >> /etc/sudoers
           ${optionalString cfg.enableDocker "# Configure Docker if enabled"}
           ${optionalString cfg.enableDocker "- systemctl enable docker"}
           ${optionalString cfg.enableDocker "- systemctl start docker"}
@@ -121,8 +124,10 @@ in
           
           # Create work directory for runner with proper permissions
           - mkdir -p /home/runner/work
+          - mkdir -p /home/runner/work/_temp
+          - mkdir -p /home/runner/work/_temp/_runner_file_commands
           - chown -R runner:runner /home/runner/work
-          - chmod 755 /home/runner/work
+          - chmod -R 755 /home/runner/work
           
           # Ensure runner user owns its home directory completely
           - chown -R runner:runner /home/runner
@@ -301,18 +306,33 @@ in
               exit 1
             fi
             
-            # Ensure the runner home directory exists and has correct ownership
-            echo "Creating runner home directory..."
-            multipass exec "$VM_NAME" -- sudo mkdir -p /home/runner || {
-              echo "Error: Failed to create /home/runner directory"
-              exit 1
-            }
-            
-            echo "Setting ownership of runner home directory..."
-            multipass exec "$VM_NAME" -- sudo chown runner:runner /home/runner || {
-              echo "Error: Failed to set ownership of /home/runner"
-              exit 1
-            }
+             # Create work directory for runner with proper permissions
+             echo "Creating runner work directory..."
+             multipass exec "$VM_NAME" -- sudo mkdir -p /home/runner/work || {
+               echo "Error: Failed to create /home/runner/work directory"
+               exit 1
+             }
+             
+             multipass exec "$VM_NAME" -- sudo mkdir -p /home/runner/work/_temp || {
+               echo "Error: Failed to create /home/runner/work/_temp directory"
+               exit 1
+             }
+             
+             multipass exec "$VM_NAME" -- sudo mkdir -p /home/runner/work/_temp/_runner_file_commands || {
+               echo "Error: Failed to create /home/runner/work/_temp/_runner_file_commands directory"
+               exit 1
+             }
+             
+             echo "Setting ownership and permissions of work directory..."
+             multipass exec "$VM_NAME" -- sudo chown -R runner:runner /home/runner/work || {
+               echo "Error: Failed to set ownership of /home/runner/work"
+               exit 1
+             }
+             
+             multipass exec "$VM_NAME" -- sudo chmod -R 755 /home/runner/work || {
+               echo "Error: Failed to set permissions of /home/runner/work"
+               exit 1
+             }
             
             # Copy the token directly to VM using multipass exec
             echo "Copying token to VM..."
