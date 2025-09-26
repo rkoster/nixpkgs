@@ -186,12 +186,15 @@ in {
   # GitHub Actions Runner with Multipass
   programs.github-runner-multipass = {
     enable = true;
-    repository = "rkoster/rubionic-workspace";
-    runnerName = "multipass-runner-${username}";
-    vmMemory = "4G";
-    vmCpus = 2;
-    enableDocker = true;
-    extraLabels = [ "multipass" "vm" "ubuntu" "docker" "nix-host" ];
+    repositories = [
+      {
+        name = "rkoster/rubionic-workspace";
+        instances = 2;
+      }
+      {
+        name = "rkoster/opencode-workspace-action";
+      }
+    ];
   };
 
   home.stateVersion = "21.03";
