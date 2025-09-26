@@ -186,7 +186,7 @@ in {
   # GitHub Actions Runner with Multipass
   programs.github-runner-multipass = {
     enable = true;
-    repository = "rkoster/opencode-workspace-action";
+    repository = "rkoster/rubionic-workspace";
     runnerName = "multipass-runner-${username}";
     vmMemory = "4G";
     vmCpus = 2;
