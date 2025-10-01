@@ -43,11 +43,13 @@ in {
     packer
     docker
     kubectl
+    k9s
     gh
     devbox
     earthly
     gnutar
     retry
+    dive
 
     sshuttle
     sshpass
@@ -190,6 +192,7 @@ in {
       {
         name = "rkoster/rubionic-workspace";
         instances = 2;
+        vmMemory = "6G";
       }
       {
         name = "rkoster/opencode-workspace-action";
