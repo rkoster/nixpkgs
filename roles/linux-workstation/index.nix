@@ -10,7 +10,7 @@ in {
     ../../programs/zsh/sources.nix
     ../../programs/emacs/sources.nix
     ../../programs/opencode
-    ../../programs/github-runner-multipass
+    ../../programs/github-runner-kind
     (import ../../programs/kinto/default.nix { inherit config pkgs homeDir; })
     (import ../../programs/git/default.nix { inherit pkgs homeDir; })
     (import ../../programs/1password/default.nix { inherit pkgs; })
@@ -43,6 +43,7 @@ in {
     packer
     docker
     kubectl
+    kind
     k9s
     gh
     devbox
@@ -185,17 +186,17 @@ in {
   # programs.kitty = import ../../programs/kitty/default.nix { pkgs = pkgs; };
   programs.ghostty = import ../../programs/ghostty/default.nix { inherit homeDir pkgs; };
 
-  # GitHub Actions Runner with Multipass
-  programs.github-runner-multipass = {
+  # GitHub Actions Runner with kind
+  programs.github-runner-kind = {
     enable = true;
     repositories = [
       {
         name = "rkoster/rubionic-workspace";
-        instances = 2;
-        vmMemory = "6G";
+        maxRunners = 5;
       }
       {
         name = "rkoster/opencode-workspace-action";
+        maxRunners = 3;
       }
     ];
   };
