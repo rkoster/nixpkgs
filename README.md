@@ -86,6 +86,21 @@ ls -la /dev/uinput      # Should show group 'input' with rw- permissions
 systemctl --user status kinto  # Should show 'active (running)'
 ```
 
+### Configure Docker daemon (required for kind and Kubernetes)
+
+After installing Docker, configure it to use systemd as the cgroup driver:
+
+```bash
+~/.local/bin/configure-docker
+```
+
+This script will:
+- Configure Docker daemon to use `native.cgroupdriver=systemd`
+- Backup any existing Docker daemon configuration
+- Restart the Docker service if it's running
+
+This is required for proper operation of kind (Kubernetes in Docker) and other container runtimes.
+
 ### Start Kinto service
 ```bash
 systemctl --user enable --now kinto

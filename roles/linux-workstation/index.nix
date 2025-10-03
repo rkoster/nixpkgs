@@ -144,6 +144,11 @@ in {
     Categories=Office;
   '';
 
+  home.file.".local/bin/configure-docker" = {
+    source = ../../scripts/configure-docker.sh;
+    executable = true;
+  };
+
   programs.noti = {
     enable = true;
   };
