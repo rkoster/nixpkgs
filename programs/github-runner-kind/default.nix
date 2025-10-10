@@ -42,6 +42,13 @@ let
         default = 1;
         description = "Number of runner scale set instances to create for this repository";
       };
+      
+      cacheSize = mkOption {
+        type = types.nullOr types.str;
+        default = null;
+        description = "Cache size for runners (e.g., '10Gi', '5Gi'). When set, enables cache overlay.";
+        example = "10Gi";
+      };
     };
   };
   
@@ -74,20 +81,22 @@ in
       type = types.listOf repositoryType;
       default = [];
       description = "List of GitHub repositories to create runner scale sets for";
-      example = literalExpression ''
-        [
-          {
-            name = "myorg/project1";
-            maxRunners = 3;
-          }
-          {
-            name = "myorg/project2";
-            maxRunners = 10;
-            instances = 3;
-            containerMode = "kubernetes";
-          }
-        ]
-      '';
+       example = literalExpression ''
+         [
+           {
+             name = "myorg/project1";
+             maxRunners = 3;
+             cacheSize = "5Gi";
+           }
+           {
+             name = "myorg/project2";
+             maxRunners = 10;
+             instances = 3;
+             containerMode = "kubernetes";
+             cacheSize = "10Gi";
+           }
+         ]
+       '';
     };
 
     clusterName = mkOption {
@@ -149,24 +158,26 @@ in
           RUNNERS_NAMESPACE="${cfg.runnersNamespace}"
           CONFIG_DIR="${config.home.homeDirectory}/.config/github-runner-kind"
           
-          declare -A REPOS
-          declare -A INSTALLATION_NAMES
-          declare -A MIN_RUNNERS
-          declare -A MAX_RUNNERS
-          declare -A CONTAINER_MODES
-          declare -A INSTANCE_IDS
-          
-          ${concatStringsSep "\n" (map (instance: 
-            let
-              instanceKey = "${instance.name}:${toString instance.instanceId}";
-            in ''
-            REPOS["${instanceKey}"]="${instance.name}"
-            INSTALLATION_NAMES["${instanceKey}"]="${instance.installationName}"
-            MIN_RUNNERS["${instanceKey}"]="${toString instance.minRunners}"
-            MAX_RUNNERS["${instanceKey}"]="${toString instance.maxRunners}"
-            CONTAINER_MODES["${instanceKey}"]="${instance.containerMode}"
-            INSTANCE_IDS["${instanceKey}"]="${toString instance.instanceId}"
-          '') expandedInstances)}
+           declare -A REPOS
+           declare -A INSTALLATION_NAMES
+           declare -A MIN_RUNNERS
+           declare -A MAX_RUNNERS
+           declare -A CONTAINER_MODES
+           declare -A CACHE_SIZES
+           declare -A INSTANCE_IDS
+           
+           ${concatStringsSep "\n" (map (instance: 
+             let
+               instanceKey = "${instance.name}:${toString instance.instanceId}";
+             in ''
+             REPOS["${instanceKey}"]="${instance.name}"
+             INSTALLATION_NAMES["${instanceKey}"]="${instance.installationName}"
+             MIN_RUNNERS["${instanceKey}"]="${toString instance.minRunners}"
+             MAX_RUNNERS["${instanceKey}"]="${toString instance.maxRunners}"
+             CONTAINER_MODES["${instanceKey}"]="${instance.containerMode}"
+             CACHE_SIZES["${instanceKey}"]="${if instance.cacheSize != null then instance.cacheSize else ""}"
+             INSTANCE_IDS["${instanceKey}"]="${toString instance.instanceId}"
+           '') expandedInstances)}
           
           get_unique_repos() {
             printf '%s\n' "''${REPOS[@]}" | sort -u
@@ -288,67 +299,89 @@ in
             echo "ARC controller uninstalled"
           }
           
-          deploy_runner_set() {
-            local arg="$1"
-            local instance_key
-            instance_key=$(parse_repo_instance "$arg")
-            validate_instance "$instance_key"
-            
-            local repo="''${REPOS[$instance_key]}"
-            local installation_name="''${INSTALLATION_NAMES[$instance_key]}"
-            local min_runners="''${MIN_RUNNERS[$instance_key]}"
-            local max_runners="''${MAX_RUNNERS[$instance_key]}"
-            local container_mode="''${CONTAINER_MODES[$instance_key]}"
-            local instance_id="''${INSTANCE_IDS[$instance_key]}"
-            
-            echo "Deploying runner scale set for: $repo (instance $instance_id)"
-            echo "Installation name: $installation_name"
-            
-            if ! check_cluster_exists; then
-              echo "Error: Cluster $CLUSTER_NAME does not exist. Run 'create-cluster' first."
-              exit 1
-            fi
-            
-            kubectl config use-context "kind-$CLUSTER_NAME"
-            
-            if ! command -v gh >/dev/null 2>&1; then
-              echo "Error: GitHub CLI (gh) not found"
-              exit 1
-            fi
-            
-            if ! gh auth status >/dev/null 2>&1; then
-              echo "Error: GitHub CLI not authenticated. Run: gh auth login"
-              exit 1
-            fi
-            
-            echo "Getting GitHub PAT..."
-            GITHUB_PAT=$(gh auth token)
-            
-            if [ -z "$GITHUB_PAT" ]; then
-              echo "Error: Failed to get GitHub PAT"
-              exit 1
-            fi
-            
-            echo "Installing runner scale set with Helm..."
-            helm upgrade --install "$installation_name" \
-              --namespace "$RUNNERS_NAMESPACE" \
-              --create-namespace \
-              --set githubConfigUrl="https://github.com/$repo" \
-              --set githubConfigSecret.github_token="$GITHUB_PAT" \
-              --set minRunners="$min_runners" \
-              --set maxRunners="$max_runners" \
-              --set containerMode.type="$container_mode" \
-              oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set
-            
-            echo "Waiting for listener pod to be ready..."
-            kubectl wait --for=condition=ready --timeout=300s \
-              pod -l app.kubernetes.io/instance="$installation_name" \
-              -n "$RUNNERS_NAMESPACE" || true
-            
-            echo "Runner scale set deployed successfully"
-            echo "Use this in your workflow:"
-            echo "  runs-on: $installation_name"
-          }
+           deploy_runner_set() {
+             local arg="$1"
+             local instance_key
+             instance_key=$(parse_repo_instance "$arg")
+             validate_instance "$instance_key"
+             
+             local repo="''${REPOS[$instance_key]}"
+             local installation_name="''${INSTALLATION_NAMES[$instance_key]}"
+             local min_runners="''${MIN_RUNNERS[$instance_key]}"
+             local max_runners="''${MAX_RUNNERS[$instance_key]}"
+             local container_mode="''${CONTAINER_MODES[$instance_key]}"
+             local cache_size="''${CACHE_SIZES[$instance_key]}"
+             local instance_id="''${INSTANCE_IDS[$instance_key]}"
+             
+             echo "Deploying runner scale set for: $repo (instance $instance_id)"
+             echo "Installation name: $installation_name"
+             
+             if ! check_cluster_exists; then
+               echo "Error: Cluster $CLUSTER_NAME does not exist. Run 'create-cluster' first."
+               exit 1
+             fi
+             
+             kubectl config use-context "kind-$CLUSTER_NAME"
+             
+             if ! command -v gh >/dev/null 2>&1; then
+               echo "Error: GitHub CLI (gh) not found"
+               exit 1
+             fi
+             
+             if ! gh auth status >/dev/null 2>&1; then
+               echo "Error: GitHub CLI not authenticated. Run: gh auth login"
+               exit 1
+             fi
+             
+             echo "Getting GitHub PAT..."
+             GITHUB_PAT=$(gh auth token)
+             
+             if [ -z "$GITHUB_PAT" ]; then
+               echo "Error: Failed to get GitHub PAT"
+               exit 1
+             fi
+             
+             echo "Installing runner scale set with Helm..."
+             
+             # Build helm command with base parameters
+             HELM_CMD=(
+               helm upgrade --install "$installation_name"
+               --namespace "$RUNNERS_NAMESPACE"
+               --create-namespace
+               --set githubConfigUrl="https://github.com/$repo"
+               --set githubConfigSecret.github_token="$GITHUB_PAT"
+               --set minRunners="$min_runners"
+               --set maxRunners="$max_runners"
+               --set containerMode.type="$container_mode"
+             )
+             
+             # Add cache overlay configuration if cache size is specified
+             if [ -n "$cache_size" ]; then
+               echo "Enabling cache overlay with size: $cache_size"
+               HELM_CMD+=(
+                 --set template.spec.overlays.cache.enabled=true
+                 --set template.spec.overlays.cache.size="$cache_size"
+               )
+             fi
+             
+             # Add chart URL and execute command
+             HELM_CMD+=(oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set)
+             
+             # Execute the helm command
+             "''${HELM_CMD[@]}"
+             
+             echo "Waiting for listener pod to be ready..."
+             kubectl wait --for=condition=ready --timeout=300s \
+               pod -l app.kubernetes.io/instance="$installation_name" \
+               -n "$RUNNERS_NAMESPACE" || true
+             
+             echo "Runner scale set deployed successfully"
+             if [ -n "$cache_size" ]; then
+               echo "Cache enabled with size: $cache_size"
+             fi
+             echo "Use this in your workflow:"
+             echo "  runs-on: $installation_name"
+           }
           
           remove_runner_set() {
             local arg="$1"

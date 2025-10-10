@@ -29,6 +29,7 @@ Add to your `home.nix`:
       {
         name = "myorg/myproject";
         maxRunners = 5;
+        cacheSize = "10Gi";  # Enable 10GB cache
       }
       {
         name = "myorg/another-project";
@@ -36,6 +37,7 @@ Add to your `home.nix`:
         minRunners = 1;
         containerMode = "kubernetes";
         instances = 3;  # Creates 3 separate runner scale sets
+        cacheSize = "5Gi";  # Enable 5GB cache for each instance
       }
     ];
   };
@@ -52,8 +54,11 @@ Add to your `home.nix`:
 - `minRunners` (default: 0): Minimum number of runners to keep available
 - `maxRunners` (default: 5): Maximum number of runners to scale to
 - `containerMode` (default: "dind"): Container mode - either "dind" (Docker-in-Docker) or "kubernetes"
+- `cacheSize` (optional): Cache size for runners (e.g., "10Gi", "5Gi"). When set, enables cache overlay for persistent storage across workflow runs
 
 **Note on Multiple Instances**: When `instances > 1`, separate runner scale sets are created with instance suffixes (e.g., `arc-runner-myorg-myproject-1`, `arc-runner-myorg-myproject-2`). This allows you to have different runner pools for the same repository.
+
+**Note on Caching**: When `cacheSize` is specified, a persistent volume is attached to runners for caching dependencies, build artifacts, and other data across workflow runs. This can significantly speed up subsequent builds.
 
 ### Global Options
 
@@ -172,6 +177,72 @@ The `runs-on` label should match the installation name:
 To see available runner labels, run:
 ```bash
 github-runner-kind-manage status
+```
+
+## Caching
+
+When `cacheSize` is configured for a repository, runners will have a persistent cache volume mounted that survives across workflow runs. This cache can be used to store:
+
+- Package manager caches (npm, pip, cargo, etc.)
+- Build artifacts
+- Downloaded dependencies
+- Docker layers (in dind mode)
+
+### Using Cache in Workflows
+
+The cache is automatically mounted at `/cache` in the runner container:
+
+```yaml
+name: Build with Cache
+on: push
+
+jobs:
+  build:
+    runs-on: arc-runner-myorg-myproject
+    steps:
+      - uses: actions/checkout@v4
+      
+      # Use cache for npm dependencies
+      - name: Cache node modules
+        run: |
+          if [ -d /cache/node_modules ]; then
+            cp -r /cache/node_modules ./
+          fi
+      
+      - name: Install dependencies
+        run: npm install
+      
+      # Save to cache
+      - name: Save cache
+        run: |
+          mkdir -p /cache
+          cp -r node_modules /cache/
+      
+      - name: Build
+        run: npm run build
+```
+
+### Cache Size Guidelines
+
+- **Small projects**: 5-10GB
+- **Medium projects**: 10-20GB  
+- **Large projects**: 20GB+
+- **Multiple instances**: Consider total storage when using multiple instances per repository
+
+Example configuration for different project sizes:
+
+```nix
+repositories = [
+  {
+    name = "myorg/small-frontend";
+    cacheSize = "5Gi";
+  }
+  {
+    name = "myorg/large-monorepo";
+    cacheSize = "25Gi";
+    instances = 2;  # 50GB total cache across instances
+  }
+];
 ```
 
 ## Architecture

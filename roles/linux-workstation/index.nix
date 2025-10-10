@@ -198,6 +198,7 @@ in {
       {
         name = "rkoster/rubionic-workspace";
         maxRunners = 5;
+        cacheSize = "10Gi";
       }
       {
         name = "rkoster/opencode-workspace-action";
