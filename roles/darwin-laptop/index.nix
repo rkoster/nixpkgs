@@ -85,6 +85,7 @@ in {
     bundix
     # kiln
     credhub
+    inputs.bosh-oci-builder.packages.${pkgs.system}.bob
 
     pget
     imgpkg

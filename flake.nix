@@ -14,6 +14,7 @@
     community-emacs.inputs.nixpkgs.follows = "nixpkgs";
     flake-parts.url = "github:hercules-ci/flake-parts";
     ghostty.url = "github:ghostty-org/ghostty";
+    bosh-oci-builder.url = "git+https://github.com/rkoster/bosh-oci-builder";
   };
 
   outputs = inputs:
