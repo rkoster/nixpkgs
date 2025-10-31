@@ -6,11 +6,11 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1761822012,
-        "narHash": "sha256-cksTQ6X+1YOEdWnfND8O1A4Jfs9epBsE7Z17pQic0GQ=",
+        "lastModified": 1761944159,
+        "narHash": "sha256-DjAyVaJNy5vaU7QayJ5mkjTvG/nZg+dyvQV3loQauMc=",
         "ref": "refs/heads/main",
-        "rev": "f165777effc4dd16ab003ab9e9d919370fb1cbc6",
-        "revCount": 141,
+        "rev": "43c3cbd7b80aa7e2c31360d7dfaf8b8ce3e023eb",
+        "revCount": 179,
         "type": "git",
         "url": "https://github.com/rkoster/bosh-oci-builder"
       },
