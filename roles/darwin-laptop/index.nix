@@ -39,11 +39,13 @@ in {
     colima
     docker
     kubectl
+    k9s
     gh
     devbox
     earthly
     gnutar
     retry
+    dive
 
     sshuttle
     sshpass
@@ -83,6 +85,7 @@ in {
     bundix
     # kiln
     credhub
+    inputs.bosh-oci-builder.packages.${pkgs.system}.bob
 
     pget
     imgpkg
