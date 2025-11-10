@@ -119,9 +119,9 @@ in
               name = "myorg/project2";
               maxRunners = 10;
               instances = 3;
-              containerMode = "kubernetes";
+              containerMode = "dind";
               dockerCacheSize = "50Gi";
-              dinDSidecar = true;
+              dinDSidecar = false;
               dinDStorageSize = "20Gi";
             }
           ]
@@ -390,16 +390,17 @@ set -euo pipefail
                
                echo "Installing runner scale set with Helm..."
                
-                # Build helm command with base parameters
-                HELM_CMD=(
-                  helm upgrade --install "$installation_name"
-                  --namespace "$RUNNERS_NAMESPACE"
-                  --create-namespace
-                  --set githubConfigUrl="https://github.com/$repo"
-                  --set githubConfigSecret.github_token="$GITHUB_PAT"
-                  --set minRunners="$min_runners"
-                  --set maxRunners="$max_runners"
-                )
+                 # Build helm command with base parameters
+                 HELM_CMD=(
+                   helm upgrade --install "$installation_name"
+                   --namespace "$RUNNERS_NAMESPACE"
+                   --create-namespace
+                   --set githubConfigUrl="https://github.com/$repo"
+                   --set githubConfigSecret.github_token="$GITHUB_PAT"
+                   --set controllerServiceAccount.name="arc-gha-rs-controller"
+                   --set minRunners="$min_runners"
+                   --set maxRunners="$max_runners"
+                 )
                 
                 # Configure container mode and Docker caching
                 if [ "$container_mode" = "kubernetes" ] && [ -n "$docker_cache_size" ]; then
@@ -431,45 +432,20 @@ set -euo pipefail
                   fi
                 fi
                 
-                # Add DinD sidecar configuration if enabled
-                if [ "$dind_sidecar" = "true" ]; then
-                  echo "Adding DinD sidecar container for Docker access via TCP"
-                  
-                  # Add runner environment for Docker TCP access
-                  HELM_CMD+=(
-                    --set template.spec.containers[0].env[0].name="DOCKER_HOST"
-                    --set template.spec.containers[0].env[0].value="tcp://localhost:2375"
-                  )
-                  
-                  # Add DinD sidecar container
-                  HELM_CMD+=(
-                    --set template.spec.containers[1].name="dind"
-                    --set template.spec.containers[1].image="$dind_image"
-                    --set template.spec.containers[1].securityContext.privileged=true
-                    --set template.spec.containers[1].env[0].name="DOCKER_TLS_CERTDIR"
-                    --set template.spec.containers[1].env[0].value=""
-                    --set template.spec.containers[1].ports[0].containerPort=2375
-                    --set template.spec.containers[1].ports[0].name="docker"
-                    --set template.spec.containers[1].ports[0].protocol="TCP"
-                    --set template.spec.containers[1].resources.requests.cpu="500m"
-                    --set template.spec.containers[1].resources.requests.memory="1Gi"
-                    --set template.spec.containers[1].resources.limits.cpu="1"
-                    --set template.spec.containers[1].resources.limits.memory="2Gi"
-                    --set template.spec.containers[1].volumeMounts[0].name="docker-storage"
-                    --set template.spec.containers[1].volumeMounts[0].mountPath="/var/lib/docker"
-                  )
-                  
-                  # Configure DinD storage volume
-                  if [ -n "$dind_storage_size" ]; then
-                    echo "Configuring persistent DinD storage: $dind_storage_size"
-                    HELM_CMD+=(
-                      --set template.spec.volumes[0].name="docker-storage"
-                      --set template.spec.volumes[0].persistentVolumeClaim.claimName="dind-storage-$installation_name"
-                    )
+                  # Add DinD sidecar configuration if enabled
+                  if [ "$dind_sidecar" = "true" ]; then
+                    echo "Adding DinD sidecar container for Docker access via TCP"
                     
-                    # Create PVC for DinD storage
-                    echo "Creating persistent volume claim for DinD storage..."
-                    cat <<EOF | kubectl apply -f -
+                    # Create temporary values file with proper YAML structure
+                    TEMP_VALUES=$(mktemp)
+                    
+                    # Configure DinD storage volume first
+                    if [ -n "$dind_storage_size" ]; then
+                      echo "Configuring persistent DinD storage: $dind_storage_size"
+                      
+                      # Create PVC for DinD storage
+                      echo "Creating persistent volume claim for DinD storage..."
+                      cat <<EOF | kubectl apply -f -
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -483,20 +459,104 @@ spec:
       storage: $dind_storage_size
   storageClassName: standard
 EOF
-                  else
-                    echo "Using emptyDir for DinD storage (temporary)"
-                    HELM_CMD+=(
-                      --set template.spec.volumes[0].name="docker-storage"
-                      --set template.spec.volumes[0].emptyDir="{}"
-                    )
+                      
+                      # Write Helm values with persistent volume
+                      cat > "\$TEMP_VALUES" <<'EOF'
+template:
+  spec:
+    env:
+    - name: DOCKER_HOST
+      value: tcp://localhost:2375
+    containers:
+    - name: runner
+      image: ghcr.io/actions/actions-runner:latest
+      env:
+      - name: DOCKER_HOST
+        value: tcp://localhost:2375
+    - name: dind
+      image: DIND_IMAGE_PLACEHOLDER
+      securityContext:
+        privileged: true
+      env:
+      - name: DOCKER_TLS_CERTDIR
+        value: ""
+      ports:
+      - containerPort: 2375
+        name: docker
+        protocol: TCP
+      resources:
+        requests:
+          cpu: "500m"
+          memory: "1Gi"
+        limits:
+          cpu: "1"
+          memory: "2Gi"
+      volumeMounts:
+      - name: docker-storage
+        mountPath: /var/lib/docker
+    volumes:
+    - name: docker-storage
+      persistentVolumeClaim:
+        claimName: STORAGE_CLAIM_PLACEHOLDER
+EOF
+                    else
+                      echo "Using emptyDir for DinD storage (temporary)"
+                      
+                      # Write Helm values with emptyDir volume
+                      cat > "\$TEMP_VALUES" <<'EOF'
+template:
+  spec:
+    env:
+    - name: DOCKER_HOST
+      value: tcp://localhost:2375
+    containers:
+    - name: runner
+      image: ghcr.io/actions/actions-runner:latest
+      env:
+      - name: DOCKER_HOST
+        value: tcp://localhost:2375
+    - name: dind
+      image: DIND_IMAGE_PLACEHOLDER
+      securityContext:
+        privileged: true
+      env:
+      - name: DOCKER_TLS_CERTDIR
+        value: ""
+      ports:
+      - containerPort: 2375
+        name: docker
+        protocol: TCP
+      resources:
+        requests:
+          cpu: "500m"
+          memory: "1Gi"
+        limits:
+          cpu: "1"
+          memory: "2Gi"
+      volumeMounts:
+      - name: docker-storage
+        mountPath: /var/lib/docker
+    volumes:
+    - name: docker-storage
+      emptyDir: {}
+EOF
+                    fi
+                    
+                    # Replace placeholders with actual values
+                    sed -i "s|DIND_IMAGE_PLACEHOLDER|$dind_image|g" "\$TEMP_VALUES"
+                    if [ -n "$dind_storage_size" ]; then
+                      sed -i "s|STORAGE_CLAIM_PLACEHOLDER|dind-storage-$installation_name|g" "\$TEMP_VALUES"
+                    fi
+                    
+                    # Add values file to helm command
+                    HELM_CMD+=(--values "\$TEMP_VALUES")
                   fi
-                fi
                
                # Add chart URL and execute command
                HELM_CMD+=(oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set)
                
-               # Execute the helm command
-               "''${HELM_CMD[@]}"
+                  # Execute the helm command
+                  "''${HELM_CMD[@]}"
                
                echo "Waiting for listener pod to be ready..."
                kubectl wait --for=condition=ready --timeout=300s \

@@ -198,8 +198,10 @@ in {
       {
         name = "rkoster/rubionic-workspace";
         maxRunners = 5;
-        containerMode = "kubernetes";
+        containerMode = "dind";
         dockerCacheSize = "20Gi";
+        dinDSidecar = false;          # Use official ARC DinD mode
+        dinDStorageSize = "20Gi";     # Persistent Docker storage for DinD
       }
       {
         name = "rkoster/opencode-workspace-action";
