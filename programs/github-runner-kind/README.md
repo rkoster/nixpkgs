@@ -29,7 +29,7 @@ Add to your `home.nix`:
       {
         name = "myorg/myproject";
         maxRunners = 5;
-        cacheSize = "10Gi";  # Enable 10GB cache
+        dockerCacheSize = "20Gi";  # Enable 20GB Docker layer cache
       }
       {
         name = "myorg/another-project";
@@ -37,7 +37,7 @@ Add to your `home.nix`:
         minRunners = 1;
         containerMode = "kubernetes";
         instances = 3;  # Creates 3 separate runner scale sets
-        cacheSize = "5Gi";  # Enable 5GB cache for each instance
+        dockerCacheSize = "50Gi";  # Enable 50GB Docker layer cache for each instance
       }
     ];
   };
@@ -53,12 +53,15 @@ Add to your `home.nix`:
 - `installationName` (optional): Helm installation name (auto-generated from repo name if not specified)
 - `minRunners` (default: 0): Minimum number of runners to keep available
 - `maxRunners` (default: 5): Maximum number of runners to scale to
-- `containerMode` (default: "dind"): Container mode - either "dind" (Docker-in-Docker) or "kubernetes"
-- `cacheSize` (optional): Cache size for runners (e.g., "10Gi", "5Gi"). When set, enables cache overlay for persistent storage across workflow runs
+- `containerMode` (default: "kubernetes"): Container mode - "dind", "kubernetes", or "kubernetes-novolume"
+- `dockerCacheSize` (optional): Docker layer cache size (e.g., "20Gi", "50Gi"). When set, enables Docker image layer caching for faster builds
+- `dinDSidecar` (default: false): Enable Docker-in-Docker sidecar container for OpenCode workspace support
+- `dinDImage` (default: "docker:24-dind"): Docker-in-Docker image to use for sidecar container  
+- `dinDStorageSize` (optional): Docker storage size for DinD sidecar (e.g., "20Gi"). Uses emptyDir if not set
 
 **Note on Multiple Instances**: When `instances > 1`, separate runner scale sets are created with instance suffixes (e.g., `arc-runner-myorg-myproject-1`, `arc-runner-myorg-myproject-2`). This allows you to have different runner pools for the same repository.
 
-**Note on Caching**: When `cacheSize` is specified, a persistent volume is attached to runners for caching dependencies, build artifacts, and other data across workflow runs. This can significantly speed up subsequent builds.
+**Note on Docker Layer Caching**: When `dockerCacheSize` is specified, a persistent volume is attached to the Docker daemon for caching pulled and built image layers. This significantly speeds up subsequent builds by reusing Docker images across workflow runs.
 
 ### Global Options
 
@@ -179,21 +182,29 @@ To see available runner labels, run:
 github-runner-kind-manage status
 ```
 
-## Caching
+## Docker Image Layer Caching
 
-When `cacheSize` is configured for a repository, runners will have a persistent cache volume mounted that survives across workflow runs. This cache can be used to store:
+When `dockerCacheSize` is configured for a repository, runners will have a persistent volume mounted at `/var/lib/docker` in the Docker daemon container. This caches:
 
-- Package manager caches (npm, pip, cargo, etc.)
-- Build artifacts
-- Downloaded dependencies
-- Docker layers (in dind mode)
+- **Pulled Docker images** from registries (docker.io, ghcr.io, etc.)
+- **Built Docker images** from Dockerfiles in your workflows
+- **Intermediate layers** created during multi-stage builds
+- **Base image layers** shared across different images
 
-### Using Cache in Workflows
+### How It Works
 
-The cache is automatically mounted at `/cache` in the runner container:
+The Docker daemon stores image layers in `/var/lib/docker`. By mounting a persistent volume here, layers persist across runner pod lifecycles, dramatically reducing:
+- Image pull times (reuse cached layers)
+- Build times (reuse unchanged layers)
+- Network bandwidth usage
+- Registry rate limiting issues
+
+### Using Docker Layer Cache in Workflows
+
+No changes needed in your workflows - the cache works automatically:
 
 ```yaml
-name: Build with Cache
+name: Build Docker Image
 on: push
 
 jobs:
@@ -202,52 +213,308 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      # Use cache for npm dependencies
-      - name: Cache node modules
+      # These will be much faster on subsequent runs
+      - name: Pull base image
+        run: docker pull node:18-alpine  # Cached after first pull
+      
+      - name: Build application image
         run: |
-          if [ -d /cache/node_modules ]; then
-            cp -r /cache/node_modules ./
-          fi
+          docker build -t myapp .  # Reuses cached layers
       
-      - name: Install dependencies
-        run: npm install
-      
-      # Save to cache
-      - name: Save cache
-        run: |
-          mkdir -p /cache
-          cp -r node_modules /cache/
-      
-      - name: Build
-        run: npm run build
+      - name: Run tests in container
+        run: docker run --rm myapp npm test
 ```
 
-### Cache Size Guidelines
+### Docker Cache Size Guidelines
 
-- **Small projects**: 5-10GB
-- **Medium projects**: 10-20GB  
-- **Large projects**: 20GB+
-- **Multiple instances**: Consider total storage when using multiple instances per repository
+Docker images can be large, especially for complex applications:
+
+- **Small projects**: 20-30GB (basic Node.js, Python apps)
+- **Medium projects**: 30-50GB (multiple services, different base images)
+- **Large projects**: 50GB+ (complex microservices, ML workloads)
+- **Multiple instances**: Each instance gets its own cache
+
+**Tip**: Monitor cache usage with `docker system df` in your workflows to optimize sizing.
 
 Example configuration for different project sizes:
 
 ```nix
 repositories = [
   {
-    name = "myorg/small-frontend";
-    cacheSize = "5Gi";
+    name = "myorg/simple-api";
+    dockerCacheSize = "20Gi";
   }
   {
-    name = "myorg/large-monorepo";
-    cacheSize = "25Gi";
-    instances = 2;  # 50GB total cache across instances
+    name = "myorg/microservices-monorepo";
+    dockerCacheSize = "75Gi";
+    instances = 2;  # 150GB total cache across instances
   }
 ];
 ```
 
-## Architecture
+## Docker-in-Docker (DinD) Sidecar for OpenCode Workspace
+
+The DinD sidecar feature enables Docker access in workflows that use the `container:` directive, particularly important for OpenCode workspace actions. This solves compatibility issues where service containers don't work with job-level containers on self-hosted runners.
+
+### When to Use DinD Sidecar
+
+Enable DinD sidecar when your workflows use:
+- **OpenCode workspace action** - Requires Docker for container management
+- **Job-level containers** with `container:` in workflow files
+- **Docker commands** inside containerized workflows
+- **Service containers** that need Docker socket access
+
+### Configuration
+
+```nix
+{
+  programs.github-runner-kind = {
+    enable = true;
+    repositories = [
+      {
+        name = "myorg/opencode-project";
+        maxRunners = 3;
+        containerMode = "kubernetes";  # Keep kubernetes mode for job containers
+        dinDSidecar = true;           # Enable DinD sidecar
+        dinDImage = "docker:24-dind"; # Use specific Docker version
+        dinDStorageSize = "30Gi";     # Persistent Docker storage
+        dockerCacheSize = "20Gi";     # Additional runner cache
+      }
+    ];
+  };
+}
+```
+
+### How DinD Sidecar Works
 
 ```
+┌─────────────────────────────────────────┐
+│           Runner Pod                     │
+│                                          │
+│  ┌────────────────┐  ┌────────────────┐ │
+│  │   Runner       │  │   DinD         │ │
+│  │   Container    │  │   Sidecar      │ │
+│  │                │  │                │ │
+│  │ DOCKER_HOST=   │  │ :2375 ←────────│ │
+│  │ tcp://         │  │ docker daemon  │ │
+│  │ localhost:2375 │  │ privileged     │ │
+│  └────────────────┘  └────────────────┘ │
+│           │                   │          │
+│           └─── TCP Socket ────┘          │
+└─────────────────────────────────────────┘
+```
+
+1. **Runner Container**: Runs your workflow with `DOCKER_HOST=tcp://localhost:2375`
+2. **DinD Sidecar**: Privileged container running Docker daemon on port 2375
+3. **TCP Communication**: Runner accesses Docker via TCP instead of Unix socket
+4. **Shared Network**: Both containers share the same pod network
+
+### OpenCode Workspace Example
+
+This configuration works perfectly with OpenCode workspace actions:
+
+```yaml
+name: OpenCode Development
+on: 
+  workflow_dispatch:
+    inputs:
+      opencode_token:
+        required: true
+
+jobs:
+  code:
+    runs-on: arc-runner-myorg-opencode-project  # Uses DinD sidecar
+    container: ubuntu:22.04  # Job-level container supported
+    steps:
+      - uses: rkoster/opencode-workspace-action@main
+        with:
+          opencode_token: ${{ inputs.opencode_token }}
+          # Action automatically detects Docker at tcp://localhost:2375
+          # No additional configuration needed
+```
+
+The OpenCode workspace action automatically:
+- Detects the `DOCKER_HOST` environment variable
+- Uses Docker TCP socket for container management
+- Works seamlessly with job-level containers
+
+### DinD Storage Options
+
+#### Temporary Storage (emptyDir)
+```nix
+{
+  name = "myorg/project";
+  dinDSidecar = true;
+  # dinDStorageSize not set - uses emptyDir
+}
+```
+- **Pros**: No persistent storage setup, simpler
+- **Cons**: Docker cache lost when pod restarts
+- **Use case**: Temporary workflows, testing
+
+#### Persistent Storage
+```nix
+{
+  name = "myorg/project";
+  dinDSidecar = true;
+  dinDStorageSize = "50Gi";  # Persistent Docker storage
+}
+```
+- **Pros**: Docker images cached across pod restarts
+- **Cons**: Uses cluster storage, slower initial pod startup
+- **Use case**: Frequent workflows, large Docker images
+
+### DinD vs Regular Docker Caching
+
+| Feature | Regular Docker Cache | DinD Sidecar |
+|---------|---------------------|---------------|
+| **Purpose** | Speed up Docker builds | Enable Docker in containers |
+| **Location** | `/var/lib/docker` mount | DinD container storage |
+| **Compatibility** | All container modes | Works with job containers |
+| **OpenCode Support** | Limited | Full support |
+| **Storage** | `dockerCacheSize` | `dinDStorageSize` |
+
+**Recommendation**: Use **both** for OpenCode workflows:
+```nix
+{
+  name = "myorg/opencode-project";
+  containerMode = "kubernetes";
+  dinDSidecar = true;           # For OpenCode compatibility
+  dinDStorageSize = "30Gi";     # DinD Docker storage
+  dockerCacheSize = "20Gi";     # Additional runner cache
+}
+```
+
+### Container Mode Compatibility
+
+| Container Mode | DinD Sidecar | Job Containers | OpenCode Support |
+|----------------|--------------|----------------|------------------|
+| `dind` | ❌ Redundant | ❌ Limited | ❌ No |
+| `kubernetes` | ✅ Recommended | ✅ Full | ✅ Yes |
+| `kubernetes-novolume` | ✅ Compatible | ✅ Full | ✅ Yes |
+
+**Best Practice**: Use `containerMode = "kubernetes"` with `dinDSidecar = true` for OpenCode workflows.
+
+### Resource Configuration
+
+DinD sidecars require additional resources:
+
+```yaml
+# Automatic resource limits applied by default:
+resources:
+  requests:
+    cpu: "500m"
+    memory: "1Gi"
+  limits:
+    cpu: "1"
+    memory: "2Gi"
+```
+
+Plan cluster capacity accordingly:
+- **Small workflows**: 2-3 concurrent DinD pods
+- **Medium workflows**: 4-6 concurrent DinD pods  
+- **Large workflows**: 8+ concurrent DinD pods
+
+### Troubleshooting DinD Sidecar
+
+#### OpenCode workspace fails to start
+```bash
+# Check if DinD sidecar is running
+kubectl get pods -n arc-runners
+kubectl logs <runner-pod> -c dind
+
+# Verify Docker TCP access
+kubectl exec <runner-pod> -c runner -- curl tcp://localhost:2375/version
+```
+
+#### Docker commands fail in workflow
+```bash
+# Check DOCKER_HOST environment
+kubectl exec <runner-pod> -c runner -- env | grep DOCKER_HOST
+# Should show: DOCKER_HOST=tcp://localhost:2375
+
+# Test Docker connectivity
+kubectl exec <runner-pod> -c runner -- docker version
+```
+
+#### DinD container not starting
+```bash
+# Check if cluster supports privileged containers
+kubectl describe pod <runner-pod>
+
+# DinD requires privileged: true
+# kind clusters support this by default
+```
+
+#### Storage issues
+```bash
+# Check PVC status
+kubectl get pvc -n arc-runners
+
+# Check storage usage
+kubectl exec <runner-pod> -c dind -- df -h /var/lib/docker
+```
+
+### Migration from DIND Mode
+
+If you're currently using `containerMode = "dind"`, migrate to DinD sidecar for better OpenCode support:
+
+**Before** (DIND mode):
+```nix
+{
+  name = "myorg/project";
+  containerMode = "dind";  # Old approach
+}
+```
+
+**After** (Kubernetes + DinD sidecar):
+```nix
+{
+  name = "myorg/project";
+  containerMode = "kubernetes";  # Better job container support
+  dinDSidecar = true;           # Docker access via sidecar
+  dinDStorageSize = "30Gi";     # Persistent Docker storage
+}
+```
+
+**Benefits of migration**:
+- ✅ Full OpenCode workspace support
+- ✅ Better job container isolation
+- ✅ More reliable scaling
+- ✅ Persistent Docker caching
+- ✅ Resource efficiency
+
+## Advanced Docker Configuration
+
+Combining both Docker layer caching and DinD sidecar for optimal performance:
+
+```nix
+repositories = [
+  {
+    name = "myorg/opencode-workspace";
+    maxRunners = 5;
+    containerMode = "kubernetes";     # Kubernetes mode for job containers
+    dinDSidecar = true;              # Enable Docker via sidecar
+    dinDImage = "docker:24-dind";    # Specific Docker version
+    dinDStorageSize = "40Gi";        # Docker image storage (DinD)
+    dockerCacheSize = "30Gi";        # Docker layer cache (runner)
+  }
+  {
+    name = "myorg/regular-builds";
+    maxRunners = 10;
+    containerMode = "kubernetes";     # No DinD needed
+    dockerCacheSize = "50Gi";        # Only Docker layer cache
+  }
+];
+```
+
+This setup provides:
+- **DinD sidecar**: Docker access for OpenCode workspace (`tcp://localhost:2375`)
+- **Docker layer cache**: Faster image pulls and builds (`dockerCacheSize`)
+- **Persistent storage**: Both caches survive pod restarts
+- **Kubernetes mode**: Full job container support
+
+## Architecture
 ┌─────────────────────────────────────────┐
 │           kind Cluster                   │
 │                                          │

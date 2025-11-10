@@ -198,11 +198,22 @@ in {
       {
         name = "rkoster/rubionic-workspace";
         maxRunners = 5;
-        cacheSize = "10Gi";
+        containerMode = "kubernetes";
+        dockerCacheSize = "20Gi";
       }
       {
         name = "rkoster/opencode-workspace-action";
         maxRunners = 3;
+        containerMode = "kubernetes";
+        dockerCacheSize = "15Gi";
+        dinDSidecar = true;           # Enable DinD sidecar for OpenCode workspace
+        dinDStorageSize = "20Gi";     # Persistent Docker storage for DinD
+      }
+      {
+        name = "rkoster/instant-bosh";
+        maxRunners = 2;
+        containerMode = "kubernetes";
+        dockerCacheSize = "15Gi";
       }
     ];
   };

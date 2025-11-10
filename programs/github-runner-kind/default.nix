@@ -32,9 +32,28 @@ let
       };
       
       containerMode = mkOption {
-        type = types.enum [ "dind" "kubernetes" ];
-        default = "dind";
-        description = "Container mode for runner (dind or kubernetes)";
+        type = types.enum [ "dind" "kubernetes" "kubernetes-novolume" ];
+        default = "kubernetes";
+        description = "Container mode for runner (dind, kubernetes, or kubernetes-novolume)";
+      };
+      
+      dinDSidecar = mkOption {
+        type = types.bool;
+        default = false;
+        description = "Enable Docker-in-Docker sidecar container for OpenCode workspace support";
+      };
+      
+      dinDImage = mkOption {
+        type = types.str;
+        default = "docker:24-dind";
+        description = "Docker-in-Docker image to use for sidecar container";
+      };
+      
+      dinDStorageSize = mkOption {
+        type = types.nullOr types.str;
+        default = null;
+        description = "Docker storage size for DinD sidecar (e.g., '20Gi'). Uses emptyDir if not set.";
+        example = "20Gi";
       };
       
       instances = mkOption {
@@ -43,10 +62,17 @@ let
         description = "Number of runner scale set instances to create for this repository";
       };
       
-      cacheSize = mkOption {
+      dockerCacheSize = mkOption {
         type = types.nullOr types.str;
         default = null;
-        description = "Cache size for runners (e.g., '10Gi', '5Gi'). When set, enables cache overlay.";
+        description = "Docker layer cache size (e.g., '20Gi', '50Gi'). When set, enables Docker image layer caching.";
+        example = "20Gi";
+      };
+      
+      buildCacheSize = mkOption {
+        type = types.nullOr types.str;
+        default = null;
+        description = "Build artifacts cache size (e.g., '10Gi', '20Gi'). When set, enables build cache volume.";
         example = "10Gi";
       };
     };
@@ -82,21 +108,24 @@ in
       default = [];
       description = "List of GitHub repositories to create runner scale sets for";
        example = literalExpression ''
-         [
-           {
-             name = "myorg/project1";
-             maxRunners = 3;
-             cacheSize = "5Gi";
-           }
-           {
-             name = "myorg/project2";
-             maxRunners = 10;
-             instances = 3;
-             containerMode = "kubernetes";
-             cacheSize = "10Gi";
-           }
-         ]
-       '';
+          [
+            {
+              name = "myorg/project1";
+              maxRunners = 3;
+              dockerCacheSize = "20Gi";
+              buildCacheSize = "10Gi";
+            }
+            {
+              name = "myorg/project2";
+              maxRunners = 10;
+              instances = 3;
+              containerMode = "kubernetes";
+              dockerCacheSize = "50Gi";
+              dinDSidecar = true;
+              dinDStorageSize = "20Gi";
+            }
+          ]
+        '';
     };
 
     clusterName = mkOption {
@@ -150,8 +179,8 @@ in
 
       ".local/bin/github-runner-kind-manage" = {
         text = ''
-          #!/bin/bash
-          set -euo pipefail
+#!/usr/bin/env bash
+set -euo pipefail
           
           CLUSTER_NAME="${cfg.clusterName}"
           CONTROLLER_NAMESPACE="${cfg.controllerNamespace}"
@@ -163,8 +192,12 @@ in
            declare -A MIN_RUNNERS
            declare -A MAX_RUNNERS
            declare -A CONTAINER_MODES
-           declare -A CACHE_SIZES
+            declare -A DOCKER_CACHE_SIZES
+            declare -A BUILD_CACHE_SIZES
            declare -A INSTANCE_IDS
+           declare -A DIND_SIDECARS
+           declare -A DIND_IMAGES
+           declare -A DIND_STORAGE_SIZES
            
            ${concatStringsSep "\n" (map (instance: 
              let
@@ -175,8 +208,12 @@ in
              MIN_RUNNERS["${instanceKey}"]="${toString instance.minRunners}"
              MAX_RUNNERS["${instanceKey}"]="${toString instance.maxRunners}"
              CONTAINER_MODES["${instanceKey}"]="${instance.containerMode}"
-             CACHE_SIZES["${instanceKey}"]="${if instance.cacheSize != null then instance.cacheSize else ""}"
+              DOCKER_CACHE_SIZES["${instanceKey}"]="${if instance.dockerCacheSize != null then instance.dockerCacheSize else ""}"
+              BUILD_CACHE_SIZES["${instanceKey}"]="${if instance.buildCacheSize != null then instance.buildCacheSize else ""}"
              INSTANCE_IDS["${instanceKey}"]="${toString instance.instanceId}"
+             DIND_SIDECARS["${instanceKey}"]="${if instance.dinDSidecar then "true" else "false"}"
+             DIND_IMAGES["${instanceKey}"]="${instance.dinDImage}"
+             DIND_STORAGE_SIZES["${instanceKey}"]="${if instance.dinDStorageSize != null then instance.dinDStorageSize else ""}"
            '') expandedInstances)}
           
           get_unique_repos() {
@@ -299,113 +336,215 @@ in
             echo "ARC controller uninstalled"
           }
           
-           deploy_runner_set() {
+             deploy_runner_set() {
+               local arg="$1"
+               local instance_key
+               instance_key=$(parse_repo_instance "$arg")
+               validate_instance "$instance_key"
+               
+               local repo="''${REPOS[$instance_key]}"
+               local installation_name="''${INSTALLATION_NAMES[$instance_key]}"
+               local min_runners="''${MIN_RUNNERS[$instance_key]}"
+               local max_runners="''${MAX_RUNNERS[$instance_key]}"
+               local container_mode="''${CONTAINER_MODES[$instance_key]}"
+                local docker_cache_size="''${DOCKER_CACHE_SIZES[$instance_key]}"
+                local build_cache_size="''${BUILD_CACHE_SIZES[$instance_key]}"
+               local instance_id="''${INSTANCE_IDS[$instance_key]}"
+               local dind_sidecar="''${DIND_SIDECARS[$instance_key]}"
+               local dind_image="''${DIND_IMAGES[$instance_key]}"
+               local dind_storage_size="''${DIND_STORAGE_SIZES[$instance_key]}"
+               
+               echo "Deploying runner scale set for: $repo (instance $instance_id)"
+               echo "Installation name: $installation_name"
+               if [ "$dind_sidecar" = "true" ]; then
+                 echo "DinD sidecar enabled: $dind_image"
+                 if [ -n "$dind_storage_size" ]; then
+                   echo "DinD storage size: $dind_storage_size"
+                 fi
+               fi
+               
+               if ! check_cluster_exists; then
+                 echo "Error: Cluster $CLUSTER_NAME does not exist. Run 'create-cluster' first."
+                 exit 1
+               fi
+               
+               kubectl config use-context "kind-$CLUSTER_NAME"
+               
+               if ! command -v gh >/dev/null 2>&1; then
+                 echo "Error: GitHub CLI (gh) not found"
+                 exit 1
+               fi
+               
+               if ! gh auth status >/dev/null 2>&1; then
+                 echo "Error: GitHub CLI not authenticated. Run: gh auth login"
+                 exit 1
+               fi
+               
+               echo "Getting GitHub PAT..."
+               GITHUB_PAT=$(gh auth token)
+               
+               if [ -z "$GITHUB_PAT" ]; then
+                 echo "Error: Failed to get GitHub PAT"
+                 exit 1
+               fi
+               
+               echo "Installing runner scale set with Helm..."
+               
+                # Build helm command with base parameters
+                HELM_CMD=(
+                  helm upgrade --install "$installation_name"
+                  --namespace "$RUNNERS_NAMESPACE"
+                  --create-namespace
+                  --set githubConfigUrl="https://github.com/$repo"
+                  --set githubConfigSecret.github_token="$GITHUB_PAT"
+                  --set minRunners="$min_runners"
+                  --set maxRunners="$max_runners"
+                )
+                
+                # Configure container mode and Docker caching
+                if [ "$container_mode" = "kubernetes" ] && [ -n "$docker_cache_size" ]; then
+                  echo "Configuring Kubernetes mode with Docker cache: $docker_cache_size"
+                  HELM_CMD+=(
+                    --set containerMode.type="kubernetes"
+                    --set containerMode.kubernetesModeWorkVolumeClaim.accessModes[0]="ReadWriteOnce"
+                    --set containerMode.kubernetesModeWorkVolumeClaim.storageClassName="standard"
+                    --set containerMode.kubernetesModeWorkVolumeClaim.resources.requests.storage="$docker_cache_size"
+                  )
+                elif [ "$container_mode" = "kubernetes-novolume" ]; then
+                  echo "Configuring Kubernetes no-volume mode (uses lifecycle hooks)"
+                  HELM_CMD+=(
+                    --set containerMode.type="kubernetes-novolume"
+                  )
+                elif [ "$container_mode" = "kubernetes" ]; then
+                  echo "Configuring Kubernetes mode"
+                  HELM_CMD+=(
+                    --set containerMode.type="kubernetes"
+                  )
+                else
+                  echo "Configuring DIND mode"
+                  HELM_CMD+=(
+                    --set containerMode.type="dind"
+                  )
+                  if [ -n "$docker_cache_size" ]; then
+                    echo "Warning: Docker cache size specified but DIND mode doesn't support persistent volumes"
+                    echo "Consider switching to 'kubernetes' mode for Docker layer caching"
+                  fi
+                fi
+                
+                # Add DinD sidecar configuration if enabled
+                if [ "$dind_sidecar" = "true" ]; then
+                  echo "Adding DinD sidecar container for Docker access via TCP"
+                  
+                  # Add runner environment for Docker TCP access
+                  HELM_CMD+=(
+                    --set template.spec.containers[0].env[0].name="DOCKER_HOST"
+                    --set template.spec.containers[0].env[0].value="tcp://localhost:2375"
+                  )
+                  
+                  # Add DinD sidecar container
+                  HELM_CMD+=(
+                    --set template.spec.containers[1].name="dind"
+                    --set template.spec.containers[1].image="$dind_image"
+                    --set template.spec.containers[1].securityContext.privileged=true
+                    --set template.spec.containers[1].env[0].name="DOCKER_TLS_CERTDIR"
+                    --set template.spec.containers[1].env[0].value=""
+                    --set template.spec.containers[1].ports[0].containerPort=2375
+                    --set template.spec.containers[1].ports[0].name="docker"
+                    --set template.spec.containers[1].ports[0].protocol="TCP"
+                    --set template.spec.containers[1].resources.requests.cpu="500m"
+                    --set template.spec.containers[1].resources.requests.memory="1Gi"
+                    --set template.spec.containers[1].resources.limits.cpu="1"
+                    --set template.spec.containers[1].resources.limits.memory="2Gi"
+                    --set template.spec.containers[1].volumeMounts[0].name="docker-storage"
+                    --set template.spec.containers[1].volumeMounts[0].mountPath="/var/lib/docker"
+                  )
+                  
+                  # Configure DinD storage volume
+                  if [ -n "$dind_storage_size" ]; then
+                    echo "Configuring persistent DinD storage: $dind_storage_size"
+                    HELM_CMD+=(
+                      --set template.spec.volumes[0].name="docker-storage"
+                      --set template.spec.volumes[0].persistentVolumeClaim.claimName="dind-storage-$installation_name"
+                    )
+                    
+                    # Create PVC for DinD storage
+                    echo "Creating persistent volume claim for DinD storage..."
+                    cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: dind-storage-$installation_name
+  namespace: $RUNNERS_NAMESPACE
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: $dind_storage_size
+  storageClassName: standard
+EOF
+                  else
+                    echo "Using emptyDir for DinD storage (temporary)"
+                    HELM_CMD+=(
+                      --set template.spec.volumes[0].name="docker-storage"
+                      --set template.spec.volumes[0].emptyDir="{}"
+                    )
+                  fi
+                fi
+               
+               # Add chart URL and execute command
+               HELM_CMD+=(oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set)
+               
+               # Execute the helm command
+               "''${HELM_CMD[@]}"
+               
+               echo "Waiting for listener pod to be ready..."
+               kubectl wait --for=condition=ready --timeout=300s \
+                 pod -l app.kubernetes.io/instance="$installation_name" \
+                 -n "$RUNNERS_NAMESPACE" || true
+               
+                echo "Runner scale set deployed successfully"
+                if [ -n "$docker_cache_size" ]; then
+                  echo "Docker layer cache enabled with size: $docker_cache_size"
+                fi
+                if [ -n "$build_cache_size" ]; then
+                  echo "Build artifacts cache enabled with size: $build_cache_size"
+                  echo "Cache available at: /runner/_work/_cache"
+                fi
+                if [ "$dind_sidecar" = "true" ]; then
+                  echo "DinD sidecar enabled - Docker available at tcp://localhost:2375"
+                  echo "OpenCode workspace action will automatically detect and use Docker"
+                fi
+               echo "Use this in your workflow:"
+               echo "  runs-on: $installation_name"
+             }
+          
+           remove_runner_set() {
              local arg="$1"
              local instance_key
              instance_key=$(parse_repo_instance "$arg")
              validate_instance "$instance_key"
              
-             local repo="''${REPOS[$instance_key]}"
              local installation_name="''${INSTALLATION_NAMES[$instance_key]}"
-             local min_runners="''${MIN_RUNNERS[$instance_key]}"
-             local max_runners="''${MAX_RUNNERS[$instance_key]}"
-             local container_mode="''${CONTAINER_MODES[$instance_key]}"
-             local cache_size="''${CACHE_SIZES[$instance_key]}"
              local instance_id="''${INSTANCE_IDS[$instance_key]}"
+             local repo="''${REPOS[$instance_key]}"
              
-             echo "Deploying runner scale set for: $repo (instance $instance_id)"
-             echo "Installation name: $installation_name"
+             echo "Removing runner scale set: $installation_name (instance $instance_id for $repo)"
              
              if ! check_cluster_exists; then
-               echo "Error: Cluster $CLUSTER_NAME does not exist. Run 'create-cluster' first."
-               exit 1
+               echo "Cluster $CLUSTER_NAME does not exist"
+               return 0
              fi
              
              kubectl config use-context "kind-$CLUSTER_NAME"
              
-             if ! command -v gh >/dev/null 2>&1; then
-               echo "Error: GitHub CLI (gh) not found"
-               exit 1
-             fi
+             helm uninstall "$installation_name" -n "$RUNNERS_NAMESPACE" || echo "Runner set not installed"
              
-             if ! gh auth status >/dev/null 2>&1; then
-               echo "Error: GitHub CLI not authenticated. Run: gh auth login"
-               exit 1
-             fi
+             # Clean up DinD storage PVC if it exists
+             kubectl delete pvc "dind-storage-$installation_name" -n "$RUNNERS_NAMESPACE" --ignore-not-found=true
              
-             echo "Getting GitHub PAT..."
-             GITHUB_PAT=$(gh auth token)
-             
-             if [ -z "$GITHUB_PAT" ]; then
-               echo "Error: Failed to get GitHub PAT"
-               exit 1
-             fi
-             
-             echo "Installing runner scale set with Helm..."
-             
-             # Build helm command with base parameters
-             HELM_CMD=(
-               helm upgrade --install "$installation_name"
-               --namespace "$RUNNERS_NAMESPACE"
-               --create-namespace
-               --set githubConfigUrl="https://github.com/$repo"
-               --set githubConfigSecret.github_token="$GITHUB_PAT"
-               --set minRunners="$min_runners"
-               --set maxRunners="$max_runners"
-               --set containerMode.type="$container_mode"
-             )
-             
-             # Add cache overlay configuration if cache size is specified
-             if [ -n "$cache_size" ]; then
-               echo "Enabling cache overlay with size: $cache_size"
-               HELM_CMD+=(
-                 --set template.spec.overlays.cache.enabled=true
-                 --set template.spec.overlays.cache.size="$cache_size"
-               )
-             fi
-             
-             # Add chart URL and execute command
-             HELM_CMD+=(oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set)
-             
-             # Execute the helm command
-             "''${HELM_CMD[@]}"
-             
-             echo "Waiting for listener pod to be ready..."
-             kubectl wait --for=condition=ready --timeout=300s \
-               pod -l app.kubernetes.io/instance="$installation_name" \
-               -n "$RUNNERS_NAMESPACE" || true
-             
-             echo "Runner scale set deployed successfully"
-             if [ -n "$cache_size" ]; then
-               echo "Cache enabled with size: $cache_size"
-             fi
-             echo "Use this in your workflow:"
-             echo "  runs-on: $installation_name"
+             echo "Runner scale set removed"
            }
-          
-          remove_runner_set() {
-            local arg="$1"
-            local instance_key
-            instance_key=$(parse_repo_instance "$arg")
-            validate_instance "$instance_key"
-            
-            local installation_name="''${INSTALLATION_NAMES[$instance_key]}"
-            local instance_id="''${INSTANCE_IDS[$instance_key]}"
-            local repo="''${REPOS[$instance_key]}"
-            
-            echo "Removing runner scale set: $installation_name (instance $instance_id for $repo)"
-            
-            if ! check_cluster_exists; then
-              echo "Cluster $CLUSTER_NAME does not exist"
-              return 0
-            fi
-            
-            kubectl config use-context "kind-$CLUSTER_NAME"
-            
-            helm uninstall "$installation_name" -n "$RUNNERS_NAMESPACE" || echo "Runner set not installed"
-            
-            echo "Runner scale set removed"
-          }
           
           deploy_all() {
             echo "Deploying all runner scale sets..."
