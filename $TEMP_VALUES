@@ -1,0 +1,82 @@
+template:
+  spec:
+    containers:
+    - name: runner
+      image: ghcr.io/actions/actions-runner:latest
+      command: 
+      - sh
+      - -c
+      - |
+        echo "Waiting for Docker daemon to be ready at localhost:2375..."
+        timeout=60
+        while [ $timeout -gt 0 ]; do
+          # Test Docker connectivity directly using the docker command
+          if docker version >/dev/null 2>&1; then
+            echo "✓ Docker daemon is ready!"
+            break
+          fi
+          echo "Docker not ready, waiting... ($timeout seconds remaining)"
+          sleep 2
+          timeout=$((timeout - 2))
+        done
+        
+        if [ $timeout -le 0 ]; then
+          echo "✗ Docker daemon did not become ready within 60 seconds"
+          echo "Checking what's available on port 2375..."
+          # Use basic shell to test port connectivity without external tools
+          if command -v timeout >/dev/null 2>&1; then
+            timeout 3 sh -c 'cat < /dev/null > /dev/tcp/localhost/2375' >/dev/null 2>&1 && echo "Port 2375 is open" || echo "Port 2375 is not accessible"
+          fi
+          exit 1
+        fi
+        
+        echo "Starting GitHub Actions runner..."
+        exec /home/runner/run.sh
+      env:
+      - name: DOCKER_HOST
+        value: "tcp://localhost:2375"
+    - name: dind
+      image: docker:24-dind
+      securityContext:
+        privileged: true
+      args:
+      - dockerd
+      - --host=tcp://0.0.0.0:2375
+      - --host=unix:///var/run/docker.sock
+      - --tls=false
+      env:
+      - name: DOCKER_TLS_CERTDIR
+        value: ""
+      ports:
+      - containerPort: 2375
+        name: docker
+        protocol: TCP
+      readinessProbe:
+        httpGet:
+          path: /_ping
+          port: 2375
+        initialDelaySeconds: 15
+        periodSeconds: 5
+        timeoutSeconds: 3
+        failureThreshold: 10
+      livenessProbe:
+        httpGet:
+          path: /_ping
+          port: 2375
+        initialDelaySeconds: 30
+        periodSeconds: 10
+        timeoutSeconds: 3
+      resources:
+        requests:
+          cpu: "500m"
+          memory: "1Gi"
+        limits:
+          cpu: "1"
+          memory: "2Gi"
+      volumeMounts:
+      - name: docker-storage
+        mountPath: /var/lib/docker
+    volumes:
+    - name: docker-storage
+      persistentVolumeClaim:
+        claimName: dind-storage-arc-runner-rkoster-rubionic-workspace

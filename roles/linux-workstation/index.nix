@@ -42,6 +42,9 @@ in {
     openapi-tui
     packer
     docker
+    podman           # Rootless container runtime
+    buildah          # OCI image builder for rootless environments
+    skopeo           # Container image tools
     kubectl
     kind
     k9s
@@ -149,6 +152,20 @@ in {
     executable = true;
   };
 
+  home.file.".local/bin/configure-rootless-containers" = {
+    source = ../../scripts/configure-rootless-containers.sh;
+    executable = true;
+  };
+
+  home.file.".local/bin/verify-rootless-setup" = {
+    source = ../../scripts/verify-rootless-setup.sh;
+    executable = true;
+  };
+
+  home.file.".local/share/doc/rootless-containers.md" = {
+    source = ../../docs/rootless-containers.md;
+  };
+
   programs.noti = {
     enable = true;
   };
@@ -198,23 +215,19 @@ in {
       {
         name = "rkoster/rubionic-workspace";
         maxRunners = 5;
-        containerMode = "kubernetes";     # Kubernetes mode for persistent volume support
-        dockerCacheSize = "20Gi";        # Persistent volume claim for Docker layer caching
-        dinDSidecar = true;              # Custom DinD sidecar for Docker command access
-        dinDStorageSize = "20Gi";        # Persistent storage for DinD daemon
+        containerMode = "rootless-docker"; # Rootless Docker daemon mode for full Docker API compatibility
+        dockerCacheSize = "20Gi";          # Persistent volume claim for Docker layer caching
       }
       {
         name = "rkoster/opencode-workspace-action";
         maxRunners = 3;
-        containerMode = "kubernetes";
+        containerMode = "rootless";        # Keep as rootless podman for now
         dockerCacheSize = "15Gi";
-        dinDSidecar = true;           # Enable DinD sidecar for OpenCode workspace
-        dinDStorageSize = "20Gi";     # Persistent Docker storage for DinD
       }
       {
         name = "rkoster/instant-bosh";
         maxRunners = 2;
-        containerMode = "kubernetes";
+        containerMode = "kubernetes";      # Keep as standard Kubernetes mode (no container nesting needed)
         dockerCacheSize = "15Gi";
       }
     ];
