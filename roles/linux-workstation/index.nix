@@ -215,7 +215,7 @@ in {
       {
         name = "rkoster/rubionic-workspace";
         maxRunners = 5;
-        containerMode = "rootless-docker"; # Rootless Docker daemon mode for full Docker API compatibility
+        containerMode = "dind";            # Using Docker-in-Docker for BOSH Docker CPI compatibility
         dockerCacheSize = "20Gi";          # Persistent volume claim for Docker layer caching
       }
       {
