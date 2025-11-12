@@ -32,9 +32,9 @@ let
       };
       
       containerMode = mkOption {
-        type = types.enum [ "dind" "kubernetes" "kubernetes-novolume" ];
+        type = types.enum [ "dind" "kubernetes" "kubernetes-novolume" "rootless" "rootless-docker" ];
         default = "kubernetes";
-        description = "Container mode for runner (dind, kubernetes, or kubernetes-novolume)";
+        description = "Container mode for runner (dind, kubernetes, kubernetes-novolume, rootless, or rootless-docker)";
       };
       
       dinDSidecar = mkOption {
@@ -402,35 +402,334 @@ set -euo pipefail
                    --set maxRunners="$max_runners"
                  )
                 
-                # Configure container mode and Docker caching
-                if [ "$container_mode" = "kubernetes" ] && [ -n "$docker_cache_size" ]; then
-                  echo "Configuring Kubernetes mode with Docker cache: $docker_cache_size"
-                  HELM_CMD+=(
-                    --set containerMode.type="kubernetes"
-                    --set containerMode.kubernetesModeWorkVolumeClaim.accessModes[0]="ReadWriteOnce"
-                    --set containerMode.kubernetesModeWorkVolumeClaim.storageClassName="standard"
-                    --set containerMode.kubernetesModeWorkVolumeClaim.resources.requests.storage="$docker_cache_size"
-                  )
-                elif [ "$container_mode" = "kubernetes-novolume" ]; then
-                  echo "Configuring Kubernetes no-volume mode (uses lifecycle hooks)"
-                  HELM_CMD+=(
-                    --set containerMode.type="kubernetes-novolume"
-                  )
-                elif [ "$container_mode" = "kubernetes" ]; then
-                  echo "Configuring Kubernetes mode"
-                  HELM_CMD+=(
-                    --set containerMode.type="kubernetes"
-                  )
-                else
-                  echo "Configuring DIND mode"
-                  HELM_CMD+=(
-                    --set containerMode.type="dind"
-                  )
-                  if [ -n "$docker_cache_size" ]; then
-                    echo "Warning: Docker cache size specified but DIND mode doesn't support persistent volumes"
-                    echo "Consider switching to 'kubernetes' mode for Docker layer caching"
-                  fi
-                fi
+                 # Configure container mode and Docker caching
+                 if [ "$container_mode" = "kubernetes" ] && [ -n "$docker_cache_size" ]; then
+                   echo "Configuring Kubernetes mode with Docker cache: $docker_cache_size"
+                   HELM_CMD+=(
+                     --set containerMode.type="kubernetes"
+                     --set containerMode.kubernetesModeWorkVolumeClaim.accessModes[0]="ReadWriteOnce"
+                     --set containerMode.kubernetesModeWorkVolumeClaim.storageClassName="standard"
+                     --set containerMode.kubernetesModeWorkVolumeClaim.resources.requests.storage="$docker_cache_size"
+                   )
+                 elif [ "$container_mode" = "kubernetes-novolume" ]; then
+                   echo "Configuring Kubernetes no-volume mode (uses lifecycle hooks)"
+                   HELM_CMD+=(
+                     --set containerMode.type="kubernetes-novolume"
+                   )
+                  elif [ "$container_mode" = "rootless" ]; then
+                    echo "Configuring rootless container mode (Podman/Buildah support)"
+                    HELM_CMD+=(
+                      --set containerMode.type="kubernetes"
+                      --set template.spec.securityContext.runAsNonRoot=true
+                      --set template.spec.securityContext.runAsUser=1000
+                      --set template.spec.securityContext.fsGroup=1000
+                    )
+                    
+                    # Add Docker cache volume if specified
+                    if [ -n "$docker_cache_size" ]; then
+                      echo "Configuring Docker layer cache for rootless mode: $docker_cache_size"
+                      HELM_CMD+=(
+                        --set containerMode.kubernetesModeWorkVolumeClaim.accessModes[0]="ReadWriteOnce"
+                        --set containerMode.kubernetesModeWorkVolumeClaim.storageClassName="standard"
+                        --set containerMode.kubernetesModeWorkVolumeClaim.resources.requests.storage="$docker_cache_size"
+                      )
+                    fi
+                    
+                    # Add init container to set up rootless container environment
+                    TEMP_INIT_VALUES=$(mktemp)
+                    if [ -n "$docker_cache_size" ]; then
+                      # Use persistent volume mount for rootless storage when cache is enabled
+                      cat > "$TEMP_INIT_VALUES" <<'EOF'
+template:
+  spec:
+    initContainers:
+    - name: setup-rootless-containers
+      image: alpine:latest
+      command: ["/bin/sh"]
+      args:
+      - -c
+      - |
+        echo "Setting up rootless container environment..."
+        mkdir -p /home/runner/.config/containers
+        mkdir -p /home/runner/.local/share/containers/storage
+        cat > /home/runner/.config/containers/containers.conf <<'CONTAINERS_CONF'
+        [containers]
+        userns = "auto"
+        cgroup_manager = "systemd"
+        netns = "auto"
+        [storage]
+        driver = "overlay"
+        graphroot = "/home/runner/_work/containers"
+        CONTAINERS_CONF
+        chown -R 1000:1000 /home/runner/.config /home/runner/.local /home/runner/_work
+        echo "Rootless container environment configured"
+      securityContext:
+        runAsUser: 0
+      volumeMounts:
+      - name: work
+        mountPath: /home/runner/_work
+    containers:
+    - name: runner
+      env:
+      - name: ROOTLESS_CONTAINERS
+        value: "true"
+      - name: CONTAINER_RUNTIME
+        value: "podman"
+      volumeMounts:
+      - name: work
+        mountPath: /home/runner/_work
+EOF
+                    else
+                      # Use emptyDir when no cache is configured
+                      cat > "$TEMP_INIT_VALUES" <<'EOF'
+template:
+  spec:
+    initContainers:
+    - name: setup-rootless-containers
+      image: alpine:latest
+      command: ["/bin/sh"]
+      args:
+      - -c
+      - |
+        echo "Setting up rootless container environment..."
+        mkdir -p /home/runner/.config/containers
+        mkdir -p /home/runner/.local/share/containers/storage
+        cat > /home/runner/.config/containers/containers.conf <<'CONTAINERS_CONF'
+        [containers]
+        userns = "auto"
+        cgroup_manager = "systemd"
+        netns = "auto"
+        [storage]
+        driver = "overlay"
+        graphroot = "/home/runner/.local/share/containers/storage"
+        CONTAINERS_CONF
+        chown -R 1000:1000 /home/runner/.config /home/runner/.local
+        echo "Rootless container environment configured"
+      securityContext:
+        runAsUser: 0
+      volumeMounts:
+      - name: runner-home
+        mountPath: /home/runner
+    containers:
+    - name: runner
+      env:
+      - name: ROOTLESS_CONTAINERS
+        value: "true"
+      - name: CONTAINER_RUNTIME
+        value: "podman"
+    volumes:
+    - name: runner-home
+      emptyDir: {}
+EOF
+                    fi
+                    HELM_CMD+=(--values "$TEMP_INIT_VALUES")
+                  elif [ "$container_mode" = "rootless-docker" ]; then
+                    echo "Configuring rootless Docker daemon mode (full Docker API compatibility)"
+                    HELM_CMD+=(
+                      --set containerMode.type="kubernetes"
+                      --set template.spec.securityContext.runAsNonRoot=true
+                      --set template.spec.securityContext.runAsUser=1000
+                      --set template.spec.securityContext.fsGroup=1000
+                    )
+                    
+                    # Add Docker cache volume if specified
+                    if [ -n "$docker_cache_size" ]; then
+                      echo "Configuring Docker layer cache for rootless Docker: $docker_cache_size"
+                      HELM_CMD+=(
+                        --set containerMode.kubernetesModeWorkVolumeClaim.accessModes[0]="ReadWriteOnce"
+                        --set containerMode.kubernetesModeWorkVolumeClaim.storageClassName="standard"
+                        --set containerMode.kubernetesModeWorkVolumeClaim.resources.requests.storage="$docker_cache_size"
+                      )
+                    fi
+                    
+                    # Add init container to set up rootless Docker environment
+                    TEMP_INIT_VALUES=$(mktemp)
+                    if [ -n "$docker_cache_size" ]; then
+                      # Use persistent volume mount for Docker storage when cache is enabled
+                      cat > "$TEMP_INIT_VALUES" <<'EOF'
+template:
+  spec:
+    initContainers:
+    - name: setup-rootless-docker
+      image: alpine:latest
+      command: ["/bin/sh"]
+      args:
+      - -c
+      - |
+        echo "Setting up rootless Docker environment..."
+        
+        # Install Docker and enable rootless mode
+        apk add --no-cache curl uidmap
+        
+        # Set up directories
+        mkdir -p /home/runner/.config/docker
+        mkdir -p /home/runner/.local/share/docker
+        mkdir -p /home/runner/bin
+        
+        # Download and install rootless Docker
+        curl -fsSL https://get.docker.com/rootless | sh
+        
+        # Configure Docker daemon for rootless mode
+        cat > /home/runner/.config/docker/daemon.json <<'DAEMON_JSON'
+        {
+          "data-root": "/home/runner/_work/docker",
+          "storage-driver": "overlay2",
+          "userns-remap": "default",
+          "log-driver": "json-file",
+          "log-opts": {
+            "max-size": "100m"
+          }
+        }
+        DAEMON_JSON
+        
+        # Set up Docker environment script
+        cat > /home/runner/bin/setup-docker <<'SETUP_SCRIPT'
+        #!/bin/sh
+        export DOCKER_HOST=unix:///run/user/1000/docker.sock
+        export PATH="/home/runner/bin:$PATH"
+        
+        # Start rootless Docker daemon
+        if ! pgrep -f "dockerd-rootless" > /dev/null; then
+          echo "Starting rootless Docker daemon..."
+          dockerd-rootless.sh --data-root=/home/runner/_work/docker &
+          
+          # Wait for daemon to be ready
+          timeout=30
+          while ! docker info >/dev/null 2>&1; do
+            sleep 1
+            timeout=$((timeout - 1))
+            if [ "$timeout" -le 0 ]; then
+              echo "Error: Docker daemon failed to start"
+              exit 1
+            fi
+          done
+          echo "Rootless Docker daemon started successfully"
+        fi
+        SETUP_SCRIPT
+        
+        chmod +x /home/runner/bin/setup-docker
+        chown -R 1000:1000 /home/runner/.config /home/runner/.local /home/runner/_work /home/runner/bin
+        echo "Rootless Docker environment configured"
+      securityContext:
+        runAsUser: 0
+      volumeMounts:
+      - name: work
+        mountPath: /home/runner/_work
+    containers:
+    - name: runner
+      env:
+      - name: ROOTLESS_CONTAINERS
+        value: "true"
+      - name: CONTAINER_RUNTIME
+        value: "docker"
+      - name: DOCKER_HOST
+        value: "unix:///run/user/1000/docker.sock"
+      - name: PATH
+        value: "/home/runner/bin:$PATH"
+      volumeMounts:
+      - name: work
+        mountPath: /home/runner/_work
+EOF
+                    else
+                      # Use emptyDir when no cache is configured
+                      cat > "$TEMP_INIT_VALUES" <<'EOF'
+template:
+  spec:
+    initContainers:
+    - name: setup-rootless-docker
+      image: alpine:latest
+      command: ["/bin/sh"]
+      args:
+      - -c
+      - |
+        echo "Setting up rootless Docker environment (no cache)..."
+        
+        # Install Docker and enable rootless mode
+        apk add --no-cache curl uidmap
+        
+        # Set up directories
+        mkdir -p /home/runner/.config/docker
+        mkdir -p /home/runner/.local/share/docker
+        mkdir -p /home/runner/bin
+        
+        # Download and install rootless Docker
+        curl -fsSL https://get.docker.com/rootless | sh
+        
+        # Configure Docker daemon for rootless mode
+        cat > /home/runner/.config/docker/daemon.json <<'DAEMON_JSON'
+        {
+          "data-root": "/home/runner/.local/share/docker",
+          "storage-driver": "vfs",
+          "userns-remap": "default",
+          "log-driver": "json-file",
+          "log-opts": {
+            "max-size": "100m"
+          }
+        }
+        DAEMON_JSON
+        
+        # Set up Docker environment script
+        cat > /home/runner/bin/setup-docker <<'SETUP_SCRIPT'
+        #!/bin/sh
+        export DOCKER_HOST=unix:///run/user/1000/docker.sock
+        export PATH="/home/runner/bin:$PATH"
+        
+        # Start rootless Docker daemon
+        if ! pgrep -f "dockerd-rootless" > /dev/null; then
+          echo "Starting rootless Docker daemon..."
+          dockerd-rootless.sh --data-root=/home/runner/.local/share/docker &
+          
+          # Wait for daemon to be ready
+          timeout=30
+          while ! docker info >/dev/null 2>&1; do
+            sleep 1
+            timeout=$((timeout - 1))
+            if [ "$timeout" -le 0 ]; then
+              echo "Error: Docker daemon failed to start"
+              exit 1
+            fi
+          done
+          echo "Rootless Docker daemon started successfully"
+        fi
+        SETUP_SCRIPT
+        
+        chmod +x /home/runner/bin/setup-docker
+        chown -R 1000:1000 /home/runner/.config /home/runner/.local /home/runner/bin
+        echo "Rootless Docker environment configured"
+      securityContext:
+        runAsUser: 0
+    containers:
+    - name: runner
+      env:
+      - name: ROOTLESS_CONTAINERS
+        value: "true"
+      - name: CONTAINER_RUNTIME
+        value: "docker"
+      - name: DOCKER_HOST
+        value: "unix:///run/user/1000/docker.sock"
+      - name: PATH
+        value: "/home/runner/bin:$PATH"
+    volumes:
+    - name: runner-home
+      emptyDir: {}
+EOF
+                    fi
+                    HELM_CMD+=(--values "$TEMP_INIT_VALUES")
+                  elif [ "$container_mode" = "kubernetes" ]; then
+                   echo "Configuring Kubernetes mode"
+                   HELM_CMD+=(
+                     --set containerMode.type="kubernetes"
+                   )
+                 else
+                   echo "Configuring DIND mode"
+                   HELM_CMD+=(
+                     --set containerMode.type="dind"
+                   )
+                   if [ -n "$docker_cache_size" ]; then
+                     echo "Warning: Docker cache size specified but DIND mode doesn't support persistent volumes"
+                     echo "Consider switching to 'kubernetes' mode for Docker layer caching"
+                   fi
+                 fi
                 
                   # Add DinD sidecar configuration if enabled
                   if [ "$dind_sidecar" = "true" ]; then

@@ -53,7 +53,7 @@ Add to your `home.nix`:
 - `installationName` (optional): Helm installation name (auto-generated from repo name if not specified)
 - `minRunners` (default: 0): Minimum number of runners to keep available
 - `maxRunners` (default: 5): Maximum number of runners to scale to
-- `containerMode` (default: "kubernetes"): Container mode - "dind", "kubernetes", or "kubernetes-novolume"
+- `containerMode` (default: "kubernetes"): Container mode - "dind", "kubernetes", "kubernetes-novolume", "rootless", or "rootless-docker"
 - `dockerCacheSize` (optional): Docker layer cache size (e.g., "20Gi", "50Gi"). When set, enables Docker image layer caching for faster builds
 - `dinDSidecar` (default: false): Enable Docker-in-Docker sidecar container for OpenCode workspace support
 - `dinDImage` (default: "docker:24-dind"): Docker-in-Docker image to use for sidecar container  
@@ -387,13 +387,48 @@ The OpenCode workspace action automatically:
 
 ### Container Mode Compatibility
 
-| Container Mode | DinD Sidecar | Job Containers | OpenCode Support |
-|----------------|--------------|----------------|------------------|
-| `dind` | ❌ Redundant | ❌ Limited | ❌ No |
-| `kubernetes` | ✅ Recommended | ✅ Full | ✅ Yes |
-| `kubernetes-novolume` | ✅ Compatible | ✅ Full | ✅ Yes |
+| Container Mode | Security | Job Containers | Docker API | Use Case |
+|----------------|----------|----------------|------------|----------|
+| `dind` | ❌ Privileged | ❌ Limited | ✅ Full | Legacy workflows |
+| `kubernetes` | ✅ Secure | ✅ Full | ❌ No Docker | Standard runners |
+| `kubernetes-novolume` | ✅ Secure | ✅ Full | ❌ No Docker | Minimal storage |
+| `rootless` | ✅ Rootless | ✅ Full | ⚠️ Podman only | Container builds |
+| `rootless-docker` | ✅ Rootless | ✅ Full | ✅ Full Docker API | Docker tools/BOSH CPI |
 
-**Best Practice**: Use `containerMode = "kubernetes"` with `dinDSidecar = true` for OpenCode workflows.
+**Best Practice**: 
+- Use `containerMode = "kubernetes"` with `dinDSidecar = true` for OpenCode workflows
+- Use `containerMode = "rootless-docker"` for tools requiring Docker API (BOSH CPI, Docker Compose)
+- Use `containerMode = "rootless"` for container builds with Podman
+
+### Rootless Docker Mode
+
+The `rootless-docker` mode provides full Docker API compatibility while maintaining security through user namespaces:
+
+```nix
+{
+  name = "myorg/bosh-project";
+  containerMode = "rootless-docker";
+  dockerCacheSize = "15Gi";  # Persistent Docker cache
+}
+```
+
+**Benefits of rootless-docker**:
+- ✅ **Full Docker API compatibility** - works with BOSH Docker CPI, Docker Compose, etc.
+- ✅ **Secure** - no privileged containers or root access required
+- ✅ **Real Docker daemon** - `docker info`, `docker ps` work exactly as expected
+- ✅ **Socket access** - tools can connect to `unix:///run/user/1000/docker.sock`
+- ✅ **Layer caching** - persistent Docker layer cache with `dockerCacheSize`
+
+**vs Podman (rootless mode)**:
+- Podman is daemonless and may not work with tools expecting Docker API
+- rootless-docker runs a real Docker daemon in user namespace
+- Better compatibility with legacy Docker tools and scripts
+
+**Example use cases**:
+- BOSH Director with Docker CPI
+- Docker Compose workflows  
+- Testcontainers integration tests
+- Any tool that expects `docker info` to work
 
 ### Resource Configuration
 
