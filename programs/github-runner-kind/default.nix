@@ -390,17 +390,18 @@ set -euo pipefail
                
                echo "Installing runner scale set with Helm..."
                
-                 # Build helm command with base parameters
-                 HELM_CMD=(
-                   helm upgrade --install "$installation_name"
-                   --namespace "$RUNNERS_NAMESPACE"
-                   --create-namespace
-                   --set githubConfigUrl="https://github.com/$repo"
-                   --set githubConfigSecret.github_token="$GITHUB_PAT"
-                   --set controllerServiceAccount.name="arc-gha-rs-controller"
-                   --set minRunners="$min_runners"
-                   --set maxRunners="$max_runners"
-                 )
+                  # Build helm command with base parameters
+                  HELM_CMD=(
+                    helm upgrade --install "$installation_name"
+                    --namespace "$RUNNERS_NAMESPACE"
+                    --create-namespace
+                    --set githubConfigUrl="https://github.com/$repo"
+                    --set githubConfigSecret.github_token="$GITHUB_PAT"
+                     --set controllerServiceAccount.name="arc-gha-rs-controller"
+                      --set minRunners="$min_runners"
+                      --set maxRunners="$max_runners"
+                     --set runnerLabels[0]="$installation_name"
+                   )
                 
                 # Configure container mode and Docker caching
                 if [ "$container_mode" = "kubernetes" ] && [ -n "$docker_cache_size" ]; then
@@ -432,11 +433,11 @@ set -euo pipefail
                   fi
                 fi
                 
-                  # Add DinD sidecar configuration if enabled
-                  if [ "$dind_sidecar" = "true" ]; then
-                    echo "Adding DinD sidecar container for Docker access via TCP"
+                   # Add DinD sidecar configuration if enabled
+                   if [ "$dind_sidecar" = "true" ]; then
+                     echo "Adding DinD sidecar container for Docker access via TCP"
                     
-                    # Create temporary values file with proper YAML structure
+                    # Create temporary values file for DinD sidecar container only
                     TEMP_VALUES=$(mktemp)
                     
                     # Configure DinD storage volume first
@@ -460,23 +461,54 @@ spec:
   storageClassName: standard
 EOF
                       
-                      # Write Helm values with persistent volume
-                      cat > "\$TEMP_VALUES" <<'EOF'
+                        # Write Helm values with persistent volume
+                        cat > "\$TEMP_VALUES" <<'EOF'
 template:
   spec:
-    env:
-    - name: DOCKER_HOST
-      value: tcp://localhost:2375
     containers:
     - name: runner
       image: ghcr.io/actions/actions-runner:latest
+      command: 
+      - sh
+      - -c
+      - |
+        echo "Waiting for Docker daemon to be ready at localhost:2375..."
+        timeout=60
+        while [ $timeout -gt 0 ]; do
+          # Test Docker connectivity directly using the docker command
+          if docker version >/dev/null 2>&1; then
+            echo "✓ Docker daemon is ready!"
+            break
+          fi
+          echo "Docker not ready, waiting... ($timeout seconds remaining)"
+          sleep 2
+          timeout=$((timeout - 2))
+        done
+        
+        if [ $timeout -le 0 ]; then
+          echo "✗ Docker daemon did not become ready within 60 seconds"
+          echo "Checking what's available on port 2375..."
+          # Use basic shell to test port connectivity without external tools
+          if command -v timeout >/dev/null 2>&1; then
+            timeout 3 sh -c 'cat < /dev/null > /dev/tcp/localhost/2375' >/dev/null 2>&1 && echo "Port 2375 is open" || echo "Port 2375 is not accessible"
+          fi
+          exit 1
+        fi
+        
+        echo "Starting GitHub Actions runner..."
+        exec /home/runner/run.sh
       env:
       - name: DOCKER_HOST
-        value: tcp://localhost:2375
+        value: "tcp://localhost:2375"
     - name: dind
       image: DIND_IMAGE_PLACEHOLDER
       securityContext:
         privileged: true
+      args:
+      - dockerd
+      - --host=tcp://0.0.0.0:2375
+      - --host=unix:///var/run/docker.sock
+      - --tls=false
       env:
       - name: DOCKER_TLS_CERTDIR
         value: ""
@@ -484,6 +516,21 @@ template:
       - containerPort: 2375
         name: docker
         protocol: TCP
+      readinessProbe:
+        httpGet:
+          path: /_ping
+          port: 2375
+        initialDelaySeconds: 15
+        periodSeconds: 5
+        timeoutSeconds: 3
+        failureThreshold: 10
+      livenessProbe:
+        httpGet:
+          path: /_ping
+          port: 2375
+        initialDelaySeconds: 30
+        periodSeconds: 10
+        timeoutSeconds: 3
       resources:
         requests:
           cpu: "500m"
@@ -502,23 +549,54 @@ EOF
                     else
                       echo "Using emptyDir for DinD storage (temporary)"
                       
-                      # Write Helm values with emptyDir volume
-                      cat > "\$TEMP_VALUES" <<'EOF'
+                        # Write Helm values with emptyDir volume
+                        cat > "\$TEMP_VALUES" <<'EOF'
 template:
   spec:
-    env:
-    - name: DOCKER_HOST
-      value: tcp://localhost:2375
     containers:
     - name: runner
       image: ghcr.io/actions/actions-runner:latest
+      command: 
+      - sh
+      - -c
+      - |
+        echo "Waiting for Docker daemon to be ready at localhost:2375..."
+        timeout=60
+        while [ $timeout -gt 0 ]; do
+          # Test Docker connectivity directly using the docker command
+          if docker version >/dev/null 2>&1; then
+            echo "✓ Docker daemon is ready!"
+            break
+          fi
+          echo "Docker not ready, waiting... ($timeout seconds remaining)"
+          sleep 2
+          timeout=$((timeout - 2))
+        done
+        
+        if [ $timeout -le 0 ]; then
+          echo "✗ Docker daemon did not become ready within 60 seconds"
+          echo "Checking what's available on port 2375..."
+          # Use basic shell to test port connectivity without external tools
+          if command -v timeout >/dev/null 2>&1; then
+            timeout 3 sh -c 'cat < /dev/null > /dev/tcp/localhost/2375' >/dev/null 2>&1 && echo "Port 2375 is open" || echo "Port 2375 is not accessible"
+          fi
+          exit 1
+        fi
+        
+        echo "Starting GitHub Actions runner..."
+        exec /home/runner/run.sh
       env:
       - name: DOCKER_HOST
-        value: tcp://localhost:2375
+        value: "tcp://localhost:2375"
     - name: dind
       image: DIND_IMAGE_PLACEHOLDER
       securityContext:
         privileged: true
+      args:
+      - dockerd
+      - --host=tcp://0.0.0.0:2375
+      - --host=unix:///var/run/docker.sock
+      - --tls=false
       env:
       - name: DOCKER_TLS_CERTDIR
         value: ""
@@ -526,6 +604,21 @@ template:
       - containerPort: 2375
         name: docker
         protocol: TCP
+      readinessProbe:
+        httpGet:
+          path: /_ping
+          port: 2375
+        initialDelaySeconds: 15
+        periodSeconds: 5
+        timeoutSeconds: 3
+        failureThreshold: 10
+      livenessProbe:
+        httpGet:
+          path: /_ping
+          port: 2375
+        initialDelaySeconds: 30
+        periodSeconds: 10
+        timeoutSeconds: 3
       resources:
         requests:
           cpu: "500m"
@@ -547,7 +640,7 @@ EOF
                     if [ -n "$dind_storage_size" ]; then
                       sed -i "s|STORAGE_CLAIM_PLACEHOLDER|dind-storage-$installation_name|g" "\$TEMP_VALUES"
                     fi
-                    
+                     
                     # Add values file to helm command
                     HELM_CMD+=(--values "\$TEMP_VALUES")
                   fi
