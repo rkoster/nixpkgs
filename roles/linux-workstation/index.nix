@@ -215,8 +215,10 @@ in {
       {
         name = "rkoster/rubionic-workspace";
         maxRunners = 5;
-        containerMode = "dind";            # Using Docker-in-Docker for BOSH Docker CPI compatibility
+        containerMode = "kubernetes";      # Use Kubernetes mode with DinD sidecar for BOSH Docker CPI compatibility  
         dockerCacheSize = "20Gi";          # Persistent volume claim for Docker layer caching
+        dinDSidecar = true;                # Enable DinD sidecar for Docker API access
+        dinDStorageSize = "20Gi";          # Persistent storage for DinD daemon
       }
       {
         name = "rkoster/opencode-workspace-action";
