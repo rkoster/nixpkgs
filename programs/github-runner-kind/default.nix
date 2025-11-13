@@ -37,24 +37,7 @@ let
         description = "Container mode for runner (dind, kubernetes, kubernetes-novolume, rootless, or rootless-docker)";
       };
       
-      dinDSidecar = mkOption {
-        type = types.bool;
-        default = false;
-        description = "Enable Docker-in-Docker sidecar container for OpenCode workspace support";
-      };
-      
-      dinDImage = mkOption {
-        type = types.str;
-        default = "docker:24-dind";
-        description = "Docker-in-Docker image to use for sidecar container";
-      };
-      
-      dinDStorageSize = mkOption {
-        type = types.nullOr types.str;
-        default = null;
-        description = "Docker storage size for DinD sidecar (e.g., '20Gi'). Uses emptyDir if not set.";
-        example = "20Gi";
-      };
+
       
       instances = mkOption {
         type = types.int;
@@ -119,10 +102,8 @@ in
               name = "myorg/project2";
               maxRunners = 10;
               instances = 3;
-              containerMode = "dind";
+              containerMode = "kubernetes";
               dockerCacheSize = "50Gi";
-              dinDSidecar = false;
-              dinDStorageSize = "20Gi";
             }
           ]
         '';
@@ -192,12 +173,9 @@ set -euo pipefail
            declare -A MIN_RUNNERS
            declare -A MAX_RUNNERS
            declare -A CONTAINER_MODES
-            declare -A DOCKER_CACHE_SIZES
-            declare -A BUILD_CACHE_SIZES
+           declare -A DOCKER_CACHE_SIZES
+           declare -A BUILD_CACHE_SIZES
            declare -A INSTANCE_IDS
-           declare -A DIND_SIDECARS
-           declare -A DIND_IMAGES
-           declare -A DIND_STORAGE_SIZES
            
            ${concatStringsSep "\n" (map (instance: 
              let
@@ -208,12 +186,9 @@ set -euo pipefail
              MIN_RUNNERS["${instanceKey}"]="${toString instance.minRunners}"
              MAX_RUNNERS["${instanceKey}"]="${toString instance.maxRunners}"
              CONTAINER_MODES["${instanceKey}"]="${instance.containerMode}"
-              DOCKER_CACHE_SIZES["${instanceKey}"]="${if instance.dockerCacheSize != null then instance.dockerCacheSize else ""}"
-              BUILD_CACHE_SIZES["${instanceKey}"]="${if instance.buildCacheSize != null then instance.buildCacheSize else ""}"
+             DOCKER_CACHE_SIZES["${instanceKey}"]="${if instance.dockerCacheSize != null then instance.dockerCacheSize else ""}"
+             BUILD_CACHE_SIZES["${instanceKey}"]="${if instance.buildCacheSize != null then instance.buildCacheSize else ""}"
              INSTANCE_IDS["${instanceKey}"]="${toString instance.instanceId}"
-             DIND_SIDECARS["${instanceKey}"]="${if instance.dinDSidecar then "true" else "false"}"
-             DIND_IMAGES["${instanceKey}"]="${instance.dinDImage}"
-             DIND_STORAGE_SIZES["${instanceKey}"]="${if instance.dinDStorageSize != null then instance.dinDStorageSize else ""}"
            '') expandedInstances)}
           
           get_unique_repos() {
@@ -347,21 +322,12 @@ set -euo pipefail
                local min_runners="''${MIN_RUNNERS[$instance_key]}"
                local max_runners="''${MAX_RUNNERS[$instance_key]}"
                local container_mode="''${CONTAINER_MODES[$instance_key]}"
-                local docker_cache_size="''${DOCKER_CACHE_SIZES[$instance_key]}"
-                local build_cache_size="''${BUILD_CACHE_SIZES[$instance_key]}"
+               local docker_cache_size="''${DOCKER_CACHE_SIZES[$instance_key]}"
+               local build_cache_size="''${BUILD_CACHE_SIZES[$instance_key]}"
                local instance_id="''${INSTANCE_IDS[$instance_key]}"
-               local dind_sidecar="''${DIND_SIDECARS[$instance_key]}"
-               local dind_image="''${DIND_IMAGES[$instance_key]}"
-               local dind_storage_size="''${DIND_STORAGE_SIZES[$instance_key]}"
                
                echo "Deploying runner scale set for: $repo (instance $instance_id)"
                echo "Installation name: $installation_name"
-               if [ "$dind_sidecar" = "true" ]; then
-                 echo "DinD sidecar enabled: $dind_image"
-                 if [ -n "$dind_storage_size" ]; then
-                   echo "DinD storage size: $dind_storage_size"
-                 fi
-               fi
                
                if ! check_cluster_exists; then
                  echo "Error: Cluster $CLUSTER_NAME does not exist. Run 'create-cluster' first."
@@ -730,126 +696,7 @@ EOF
                      echo "Consider switching to 'kubernetes' mode for Docker layer caching"
                    fi
                  fi
-                
-                  # Add DinD sidecar configuration if enabled
-                  if [ "$dind_sidecar" = "true" ]; then
-                    echo "Adding DinD sidecar container for Docker access via TCP"
-                    
-                    # Create temporary values file with proper YAML structure
-                    TEMP_VALUES=$(mktemp)
-                    
-                    # Configure DinD storage volume first
-                    if [ -n "$dind_storage_size" ]; then
-                      echo "Configuring persistent DinD storage: $dind_storage_size"
-                      
-                      # Create PVC for DinD storage
-                      echo "Creating persistent volume claim for DinD storage..."
-                      cat <<EOF | kubectl apply -f -
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: dind-storage-$installation_name
-  namespace: $RUNNERS_NAMESPACE
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: $dind_storage_size
-  storageClassName: standard
-EOF
-                      
-                      # Write Helm values with persistent volume
-                      cat > "$TEMP_VALUES" <<'EOF'
-template:
-  spec:
-    env:
-    - name: DOCKER_HOST
-      value: tcp://localhost:2375
-    containers:
-    - name: runner
-      image: ghcr.io/actions/actions-runner:latest
-      env:
-      - name: DOCKER_HOST
-        value: tcp://localhost:2375
-    - name: dind
-      image: DIND_IMAGE_PLACEHOLDER
-      securityContext:
-        privileged: true
-      env:
-      - name: DOCKER_TLS_CERTDIR
-        value: ""
-      ports:
-      - containerPort: 2375
-        name: docker
-        protocol: TCP
-      resources:
-        requests:
-          cpu: "500m"
-          memory: "1Gi"
-        limits:
-          cpu: "1"
-          memory: "2Gi"
-      volumeMounts:
-      - name: docker-storage
-        mountPath: /var/lib/docker
-    volumes:
-    - name: docker-storage
-      persistentVolumeClaim:
-        claimName: STORAGE_CLAIM_PLACEHOLDER
-EOF
-                    else
-                      echo "Using emptyDir for DinD storage (temporary)"
-                      
-                      # Write Helm values with emptyDir volume
-                      cat > "$TEMP_VALUES" <<'EOF'
-template:
-  spec:
-    env:
-    - name: DOCKER_HOST
-      value: tcp://localhost:2375
-    containers:
-    - name: runner
-      image: ghcr.io/actions/actions-runner:latest
-      env:
-      - name: DOCKER_HOST
-        value: tcp://localhost:2375
-    - name: dind
-      image: DIND_IMAGE_PLACEHOLDER
-      securityContext:
-        privileged: true
-      env:
-      - name: DOCKER_TLS_CERTDIR
-        value: ""
-      ports:
-      - containerPort: 2375
-        name: docker
-        protocol: TCP
-      resources:
-        requests:
-          cpu: "500m"
-          memory: "1Gi"
-        limits:
-          cpu: "1"
-          memory: "2Gi"
-      volumeMounts:
-      - name: docker-storage
-        mountPath: /var/lib/docker
-    volumes:
-    - name: docker-storage
-      emptyDir: {}
-EOF
-                    fi
-                    
-                    # Replace placeholders with actual values
-                    sed -i "s|DIND_IMAGE_PLACEHOLDER|$dind_image|g" "$TEMP_VALUES"
-                    if [ -n "$dind_storage_size" ]; then
-                      sed -i "s|STORAGE_CLAIM_PLACEHOLDER|dind-storage-$installation_name|g" "$TEMP_VALUES"
-                    fi
-                    
-                    # Add values file to helm command
-                    HELM_CMD+=(--values "$TEMP_VALUES")
-                  fi
+
                
                # Add chart URL and execute command
                HELM_CMD+=(oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set)
@@ -862,18 +709,14 @@ EOF
                  pod -l app.kubernetes.io/instance="$installation_name" \
                  -n "$RUNNERS_NAMESPACE" || true
                
-                echo "Runner scale set deployed successfully"
-                if [ -n "$docker_cache_size" ]; then
-                  echo "Docker layer cache enabled with size: $docker_cache_size"
-                fi
-                if [ -n "$build_cache_size" ]; then
-                  echo "Build artifacts cache enabled with size: $build_cache_size"
-                  echo "Cache available at: /runner/_work/_cache"
-                fi
-                if [ "$dind_sidecar" = "true" ]; then
-                  echo "DinD sidecar enabled - Docker available at tcp://localhost:2375"
-                  echo "OpenCode workspace action will automatically detect and use Docker"
-                fi
+                 echo "Runner scale set deployed successfully"
+                 if [ -n "$docker_cache_size" ]; then
+                   echo "Docker layer cache enabled with size: $docker_cache_size"
+                 fi
+                 if [ -n "$build_cache_size" ]; then
+                   echo "Build artifacts cache enabled with size: $build_cache_size"
+                   echo "Cache available at: /runner/_work/_cache"
+                 fi
                echo "Use this in your workflow:"
                echo "  runs-on: $installation_name"
              }
@@ -897,10 +740,7 @@ EOF
              
              kubectl config use-context "kind-$CLUSTER_NAME"
              
-             helm uninstall "$installation_name" -n "$RUNNERS_NAMESPACE" || echo "Runner set not installed"
-             
-             # Clean up DinD storage PVC if it exists
-             kubectl delete pvc "dind-storage-$installation_name" -n "$RUNNERS_NAMESPACE" --ignore-not-found=true
+              helm uninstall "$installation_name" -n "$RUNNERS_NAMESPACE" || echo "Runner set not installed"
              
              echo "Runner scale set removed"
            }
