@@ -215,13 +215,13 @@ in {
       {
         name = "rkoster/rubionic-workspace";
         maxRunners = 5;
-        containerMode = "dind";            # Using Docker-in-Docker for BOSH Docker CPI compatibility
+        containerMode = "kubernetes";      # Use Kubernetes mode for kubelet image caching
         dockerCacheSize = "20Gi";          # Persistent volume claim for Docker layer caching
       }
       {
         name = "rkoster/opencode-workspace-action";
         maxRunners = 3;
-        containerMode = "rootless";        # Keep as rootless podman for now
+        containerMode = "kubernetes";      # Switch to Kubernetes mode for kubelet image caching
         dockerCacheSize = "15Gi";
       }
       {
