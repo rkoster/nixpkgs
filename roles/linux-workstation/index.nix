@@ -221,7 +221,7 @@ in {
       {
         name = "rkoster/opencode-workspace-action";
         maxRunners = 3;
-        containerMode = "rootless";        # Keep as rootless podman for now
+        containerMode = "kubernetes";      # Switch to Kubernetes mode for kubelet image caching optimization
         dockerCacheSize = "15Gi";
       }
       {
