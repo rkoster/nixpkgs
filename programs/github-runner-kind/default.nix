@@ -760,7 +760,7 @@ spec:
 EOF
                       
                       # Write Helm values with persistent volume
-                      cat > "\$TEMP_VALUES" <<'EOF'
+                      cat > "$TEMP_VALUES" <<'EOF'
 template:
   spec:
     env:
@@ -802,7 +802,7 @@ EOF
                       echo "Using emptyDir for DinD storage (temporary)"
                       
                       # Write Helm values with emptyDir volume
-                      cat > "\$TEMP_VALUES" <<'EOF'
+                      cat > "$TEMP_VALUES" <<'EOF'
 template:
   spec:
     env:
@@ -842,13 +842,13 @@ EOF
                     fi
                     
                     # Replace placeholders with actual values
-                    sed -i "s|DIND_IMAGE_PLACEHOLDER|$dind_image|g" "\$TEMP_VALUES"
+                    sed -i "s|DIND_IMAGE_PLACEHOLDER|$dind_image|g" "$TEMP_VALUES"
                     if [ -n "$dind_storage_size" ]; then
-                      sed -i "s|STORAGE_CLAIM_PLACEHOLDER|dind-storage-$installation_name|g" "\$TEMP_VALUES"
+                      sed -i "s|STORAGE_CLAIM_PLACEHOLDER|dind-storage-$installation_name|g" "$TEMP_VALUES"
                     fi
                     
                     # Add values file to helm command
-                    HELM_CMD+=(--values "\$TEMP_VALUES")
+                    HELM_CMD+=(--values "$TEMP_VALUES")
                   fi
                
                # Add chart URL and execute command
