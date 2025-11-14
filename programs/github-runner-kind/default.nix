@@ -800,14 +800,14 @@ metadata:
   namespace: $RUNNERS_NAMESPACE
 data:
   content: |
-    metadata:
-      annotations:
-        privileged-containers.actions.github.com/enabled: "true"
-    spec:
-      securityContext:
-        runAsUser: 0
-        runAsGroup: 0
-        fsGroup: 0
+     metadata:
+       annotations:
+         privileged-containers.actions.github.com/enabled: "true"
+     spec:
+       securityContext:
+         runAsUser: 0
+         runAsGroup: 0
+         fsGroup: 0
        containers:
          - name: "\$job"
            securityContext:
