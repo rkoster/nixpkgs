@@ -730,6 +730,66 @@ EOF
                        # We'll handle this in the template below
                      fi
                      
+                     # Create enhanced RBAC permissions for privileged-kubernetes mode
+                     echo "Creating enhanced RBAC permissions for privileged container operations..."
+                     cat <<EOF | kubectl apply -f -
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: $installation_name-privileged-manager
+  namespace: $RUNNERS_NAMESPACE
+  labels:
+    actions.github.com/scale-set-name: $installation_name
+    app.kubernetes.io/instance: $installation_name
+    app.kubernetes.io/component: privileged-manager-role
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["create", "delete", "get", "list"]
+- apiGroups: [""]
+  resources: ["pods/status"]
+  verbs: ["get"]
+- apiGroups: [""]
+  resources: ["pods/exec"]
+  verbs: ["get", "create"]
+- apiGroups: [""]
+  resources: ["pods/log"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["create", "delete", "get", "list", "patch", "update"]
+- apiGroups: [""]
+  resources: ["serviceaccounts"]
+  verbs: ["create", "delete", "get", "list", "patch", "update"]
+- apiGroups: ["rbac.authorization.k8s.io"]
+  resources: ["rolebindings"]
+  verbs: ["create", "delete", "get", "patch", "update"]
+- apiGroups: ["rbac.authorization.k8s.io"]
+  resources: ["roles"]
+  verbs: ["create", "delete", "get", "patch", "update"]
+- apiGroups: ["batch"]
+  resources: ["jobs"]
+  verbs: ["get", "list", "create", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: $installation_name-privileged-pod-manager
+  namespace: $RUNNERS_NAMESPACE
+  labels:
+    actions.github.com/scale-set-name: $installation_name
+    app.kubernetes.io/instance: $installation_name
+    app.kubernetes.io/component: privileged-pod-manager-binding
+subjects:
+- kind: ServiceAccount
+  name: $installation_name-gha-rs-no-permission
+  namespace: $RUNNERS_NAMESPACE
+roleRef:
+  kind: Role
+  name: $installation_name-privileged-manager
+  apiGroup: rbac.authorization.k8s.io
+EOF
+                     
                      # Create ConfigMap for privileged hook extension
                      echo "Creating ConfigMap for privileged container hook extension..."
                      cat <<EOF | kubectl apply -f -
@@ -770,42 +830,33 @@ data:
                 - MKNOD
                 - AUDIT_WRITE
                 - AUDIT_CONTROL
-          volumeMounts:
-            - name: cgroup
-              mountPath: /sys/fs/cgroup
-              readOnly: false
-              mountPropagation: Bidirectional
-            - name: proc
-              mountPath: /proc
-              readOnly: false
-            - name: docker-sock
-              mountPath: /var/run/docker.sock
-              readOnly: false
-            - name: dev
-              mountPath: /dev
-              readOnly: false
-          env:
-            - name: SYSTEMD_IGNORE_CHROOT
-              value: "1"
-            - name: DOCKER_DAEMON_ARGS
-              value: "--storage-driver=overlay2 --host=unix:///var/run/docker.sock --iptables=false"
-      volumes:
-        - name: cgroup
-          hostPath:
-            path: /sys/fs/cgroup
-            type: Directory
-        - name: proc
-          hostPath:
-            path: /proc
-            type: Directory
-        - name: docker-sock
-          hostPath:
-            path: /var/run/docker.sock
-            type: Socket
-        - name: dev
-          hostPath:
-            path: /dev
-            type: Directory
+           volumeMounts:
+             - name: cgroup
+               mountPath: /sys/fs/cgroup
+               readOnly: false
+               mountPropagation: Bidirectional
+             - name: proc
+               mountPath: /proc
+               readOnly: false
+             - name: dev
+               mountPath: /dev
+               readOnly: false
+           env:
+             - name: SYSTEMD_IGNORE_CHROOT
+               value: "1"
+       volumes:
+         - name: cgroup
+           hostPath:
+             path: /sys/fs/cgroup
+             type: Directory
+         - name: proc
+           hostPath:
+             path: /proc
+             type: Directory
+         - name: dev
+           hostPath:
+             path: /dev
+             type: Directory
       tolerations:
         - key: node.kubernetes.io/not-ready
           operator: Exists
@@ -836,7 +887,7 @@ template:
           fieldRef:
             fieldPath: metadata.name
       - name: ACTIONS_RUNNER_REQUIRE_JOB_CONTAINER
-        value: "true"
+        value: "false"
       - name: ACTIONS_RUNNER_CONTAINER_HOOK_TEMPLATE
         value: "/etc/hooks/content"
       volumeMounts:
@@ -876,7 +927,7 @@ template:
           fieldRef:
             fieldPath: metadata.name
       - name: ACTIONS_RUNNER_REQUIRE_JOB_CONTAINER
-        value: "true"
+        value: "false"
       - name: ACTIONS_RUNNER_CONTAINER_HOOK_TEMPLATE
         value: "/etc/hooks/content"
       volumeMounts:
@@ -1079,6 +1130,10 @@ EOF
               
               # Clean up privileged hook extension ConfigMap if it exists
               kubectl delete configmap "privileged-hook-extension-$installation_name" -n "$RUNNERS_NAMESPACE" --ignore-not-found=true
+              
+              # Clean up privileged-kubernetes RBAC resources if they exist
+              kubectl delete rolebinding "$installation_name-privileged-pod-manager" -n "$RUNNERS_NAMESPACE" --ignore-not-found=true
+              kubectl delete role "$installation_name-privileged-manager" -n "$RUNNERS_NAMESPACE" --ignore-not-found=true
              
              echo "Runner scale set removed"
            }
