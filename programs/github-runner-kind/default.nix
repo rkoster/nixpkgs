@@ -857,15 +857,15 @@ data:
            hostPath:
              path: /dev
              type: Directory
-      tolerations:
-        - key: node.kubernetes.io/not-ready
-          operator: Exists
-          effect: NoExecute
-          tolerationSeconds: 300
-        - key: node.kubernetes.io/unreachable
-          operator: Exists
-          effect: NoExecute
-          tolerationSeconds: 300
+       tolerations:
+         - key: node.kubernetes.io/not-ready
+           operator: Exists
+           effect: NoExecute
+           tolerationSeconds: 300
+         - key: node.kubernetes.io/unreachable
+           operator: Exists
+           effect: NoExecute
+           tolerationSeconds: 300
 EOF
                      
                      # Create complete template with privileged hook extension
