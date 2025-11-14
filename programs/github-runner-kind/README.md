@@ -53,7 +53,7 @@ Add to your `home.nix`:
 - `installationName` (optional): Helm installation name (auto-generated from repo name if not specified)
 - `minRunners` (default: 0): Minimum number of runners to keep available
 - `maxRunners` (default: 5): Maximum number of runners to scale to
-- `containerMode` (default: "kubernetes"): Container mode - "dind", "kubernetes", "kubernetes-novolume", "rootless", or "rootless-docker"
+- `containerMode` (default: "kubernetes"): Container mode - "dind", "kubernetes", "kubernetes-novolume", "privileged-kubernetes", "rootless", or "rootless-docker"
 - `dockerCacheSize` (optional): Docker layer cache size (e.g., "20Gi", "50Gi"). When set, enables Docker image layer caching for faster builds
 - `dinDSidecar` (default: false): Enable Docker-in-Docker sidecar container for OpenCode workspace support
 - `dinDImage` (default: "docker:24-dind"): Docker-in-Docker image to use for sidecar container  
@@ -392,11 +392,13 @@ The OpenCode workspace action automatically:
 | `dind` | ❌ Privileged | ❌ Limited | ✅ Full | Legacy workflows |
 | `kubernetes` | ✅ Secure | ✅ Full | ❌ No Docker | Standard runners |
 | `kubernetes-novolume` | ✅ Secure | ✅ Full | ❌ No Docker | Minimal storage |
+| `privileged-kubernetes` | ❌ Privileged | ✅ Full | ✅ Nested Docker | BOSH/systemd containers |
 | `rootless` | ✅ Rootless | ✅ Full | ⚠️ Podman only | Container builds |
 | `rootless-docker` | ✅ Rootless | ✅ Full | ✅ Full Docker API | Docker tools/BOSH CPI |
 
 **Best Practice**: 
 - Use `containerMode = "kubernetes"` with `dinDSidecar = true` for OpenCode workflows
+- Use `containerMode = "privileged-kubernetes"` for BOSH deployments and systemd containers requiring nested Docker
 - Use `containerMode = "rootless-docker"` for tools requiring Docker API (BOSH CPI, Docker Compose)
 - Use `containerMode = "rootless"` for container builds with Podman
 
@@ -429,6 +431,68 @@ The `rootless-docker` mode provides full Docker API compatibility while maintain
 - Docker Compose workflows  
 - Testcontainers integration tests
 - Any tool that expects `docker info` to work
+
+### Privileged Kubernetes Mode
+
+The `privileged-kubernetes` mode provides full privileged container support with nested Docker daemon capability, ideal for BOSH deployments and systemd-based containers:
+
+```nix
+{
+  name = "myorg/bosh-project";
+  containerMode = "privileged-kubernetes";
+  dockerCacheSize = "30Gi";  # Docker layer cache
+}
+```
+
+**Benefits of privileged-kubernetes**:
+- ✅ **Full privileged access** - complete access to host kernel features
+- ✅ **Nested Docker support** - can run Docker daemon inside job containers
+- ✅ **Systemd compatibility** - supports systemd-based containers and services
+- ✅ **cgroup access** - full access to control groups for container management
+- ✅ **BOSH compatibility** - perfect for BOSH Director deployments
+- ✅ **Hook-based configuration** - uses GitHub's official hook extension mechanism
+
+**How privileged-kubernetes works**:
+1. **Hook Extension**: Creates a ConfigMap with privileged security context
+2. **Job Container Modification**: ARC applies privileged settings to job containers
+3. **Host Resource Access**: Mounts `/sys/fs/cgroup`, `/proc`, `/sys`, `/dev`, and Docker socket
+4. **Kernel Capabilities**: Adds all necessary capabilities (SYS_ADMIN, NET_ADMIN, MKNOD, etc.)
+
+**Security considerations**:
+- ⚠️ **Privileged containers** - job containers run with full host access
+- ⚠️ **Host resource access** - containers can access host cgroup and Docker
+- ⚠️ **Use with caution** - only for trusted workloads and controlled environments
+
+**Example use cases**:
+- **BOSH Director** deployments with Docker CPI or Garden containers
+- **systemd-based** containers requiring full service management
+- **Nested virtualization** workflows requiring Docker-in-Docker
+- **Container runtime testing** that requires kernel-level features
+- **Complex CI/CD** workflows with privileged system operations
+
+**Configuration example**:
+```nix
+repositories = [
+  {
+    name = "myorg/bosh-deployment";
+    containerMode = "privileged-kubernetes";
+    maxRunners = 3;
+    dockerCacheSize = "50Gi";  # Large cache for BOSH stemcells
+  }
+  {
+    name = "myorg/systemd-services";
+    containerMode = "privileged-kubernetes";
+    maxRunners = 2;
+    dockerCacheSize = "20Gi";
+  }
+];
+```
+
+**vs other container modes**:
+- **vs dind**: Better job container isolation and scaling
+- **vs kubernetes**: Adds privileged access and nested Docker support
+- **vs rootless-docker**: Trades security for full privileged access
+- **vs DinD sidecar**: Privileged containers vs separate Docker service
 
 ### Resource Configuration
 

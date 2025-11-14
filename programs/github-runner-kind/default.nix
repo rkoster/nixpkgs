@@ -32,9 +32,9 @@ let
       };
       
       containerMode = mkOption {
-        type = types.enum [ "dind" "kubernetes" "kubernetes-novolume" "rootless" "rootless-docker" ];
+        type = types.enum [ "dind" "kubernetes" "kubernetes-novolume" "privileged-kubernetes" "rootless" "rootless-docker" ];
         default = "kubernetes";
-        description = "Container mode for runner (dind, kubernetes, kubernetes-novolume, rootless, or rootless-docker)";
+        description = "Container mode for runner (dind, kubernetes, kubernetes-novolume, privileged-kubernetes, rootless, or rootless-docker)";
       };
       
       dinDSidecar = mkOption {
@@ -715,12 +715,187 @@ template:
 EOF
                     fi
                     HELM_CMD+=(--values "$TEMP_INIT_VALUES")
-                  elif [ "$container_mode" = "kubernetes" ]; then
-                   echo "Configuring Kubernetes mode"
-                   HELM_CMD+=(
-                     --set containerMode.type="kubernetes"
-                   )
-                 else
+                   elif [ "$container_mode" = "kubernetes" ]; then
+                    echo "Configuring Kubernetes mode"
+                    HELM_CMD+=(
+                      --set containerMode.type="kubernetes"
+                    )
+                   elif [ "$container_mode" = "privileged-kubernetes" ]; then
+                     echo "Configuring privileged Kubernetes mode with nested Docker support"
+                     # Don't set containerMode.type to avoid automatic template generation
+                     
+                     # Add Docker cache volume if specified
+                     if [ -n "$docker_cache_size" ]; then
+                       echo "Configuring Docker layer cache for privileged mode: $docker_cache_size"
+                       # We'll handle this in the template below
+                     fi
+                     
+                     # Create ConfigMap for privileged hook extension
+                     echo "Creating ConfigMap for privileged container hook extension..."
+                     cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: privileged-hook-extension-$installation_name
+  namespace: $RUNNERS_NAMESPACE
+data:
+  content: |
+    metadata:
+      annotations:
+        privileged-containers.actions.github.com/enabled: "true"
+    spec:
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0
+        fsGroup: 0
+      containers:
+        - name: "\$job"
+          securityContext:
+            privileged: true
+            runAsUser: 0
+            runAsGroup: 0
+            allowPrivilegeEscalation: true
+            readOnlyRootFilesystem: false
+            capabilities:
+              add:
+                - SYS_ADMIN
+                - NET_ADMIN
+                - SYS_PTRACE
+                - SYS_CHROOT
+                - SETFCAP
+                - SETPCAP
+                - NET_RAW
+                - IPC_LOCK
+                - SYS_RESOURCE
+                - MKNOD
+                - AUDIT_WRITE
+                - AUDIT_CONTROL
+          volumeMounts:
+            - name: cgroup
+              mountPath: /sys/fs/cgroup
+              readOnly: false
+              mountPropagation: Bidirectional
+            - name: proc
+              mountPath: /proc
+              readOnly: false
+            - name: docker-sock
+              mountPath: /var/run/docker.sock
+              readOnly: false
+            - name: dev
+              mountPath: /dev
+              readOnly: false
+          env:
+            - name: SYSTEMD_IGNORE_CHROOT
+              value: "1"
+            - name: DOCKER_DAEMON_ARGS
+              value: "--storage-driver=overlay2 --host=unix:///var/run/docker.sock --iptables=false"
+      volumes:
+        - name: cgroup
+          hostPath:
+            path: /sys/fs/cgroup
+            type: Directory
+        - name: proc
+          hostPath:
+            path: /proc
+            type: Directory
+        - name: docker-sock
+          hostPath:
+            path: /var/run/docker.sock
+            type: Socket
+        - name: dev
+          hostPath:
+            path: /dev
+            type: Directory
+      tolerations:
+        - key: node.kubernetes.io/not-ready
+          operator: Exists
+          effect: NoExecute
+          tolerationSeconds: 300
+        - key: node.kubernetes.io/unreachable
+          operator: Exists
+          effect: NoExecute
+          tolerationSeconds: 300
+EOF
+                     
+                     # Create complete template with privileged hook extension
+                     TEMP_PRIVILEGED_VALUES=$(mktemp)
+                     if [ -n "$docker_cache_size" ]; then
+                       # Template with persistent work volume for caching
+                       cat > "$TEMP_PRIVILEGED_VALUES" <<EOF
+template:
+  spec:
+    containers:
+    - name: runner
+      image: ghcr.io/actions/actions-runner:latest
+      command: ["/home/runner/run.sh"]
+      env:
+      - name: ACTIONS_RUNNER_CONTAINER_HOOKS
+        value: /home/runner/k8s/index.js
+      - name: ACTIONS_RUNNER_POD_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.name
+      - name: ACTIONS_RUNNER_REQUIRE_JOB_CONTAINER
+        value: "true"
+      - name: ACTIONS_RUNNER_CONTAINER_HOOK_TEMPLATE
+        value: "/etc/hooks/content"
+      volumeMounts:
+      - name: work
+        mountPath: /home/runner/_work
+      - name: privileged-hook-extension
+        mountPath: /etc/hooks
+        readOnly: true
+    volumes:
+    - name: work
+      ephemeral:
+        volumeClaimTemplate:
+          spec:
+            accessModes: [ "ReadWriteOnce" ]
+            storageClassName: "standard"
+            resources:
+              requests:
+                storage: $docker_cache_size
+    - name: privileged-hook-extension
+      configMap:
+        name: privileged-hook-extension-$installation_name
+EOF
+                     else
+                       # Template without persistent storage
+                       cat > "$TEMP_PRIVILEGED_VALUES" <<EOF
+template:
+  spec:
+    containers:
+    - name: runner
+      image: ghcr.io/actions/actions-runner:latest
+      command: ["/home/runner/run.sh"]
+      env:
+      - name: ACTIONS_RUNNER_CONTAINER_HOOKS
+        value: /home/runner/k8s/index.js
+      - name: ACTIONS_RUNNER_POD_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.name
+      - name: ACTIONS_RUNNER_REQUIRE_JOB_CONTAINER
+        value: "true"
+      - name: ACTIONS_RUNNER_CONTAINER_HOOK_TEMPLATE
+        value: "/etc/hooks/content"
+      volumeMounts:
+      - name: work
+        mountPath: /home/runner/_work
+      - name: privileged-hook-extension
+        mountPath: /etc/hooks
+        readOnly: true
+    volumes:
+    - name: work
+      emptyDir: {}
+    - name: privileged-hook-extension
+      configMap:
+        name: privileged-hook-extension-$installation_name
+EOF
+                     fi
+                     
+                     HELM_CMD+=(--values "$TEMP_PRIVILEGED_VALUES")
+                  else
                    echo "Configuring DIND mode"
                    HELM_CMD+=(
                      --set containerMode.type="dind"
@@ -897,10 +1072,13 @@ EOF
              
              kubectl config use-context "kind-$CLUSTER_NAME"
              
-             helm uninstall "$installation_name" -n "$RUNNERS_NAMESPACE" || echo "Runner set not installed"
-             
-             # Clean up DinD storage PVC if it exists
-             kubectl delete pvc "dind-storage-$installation_name" -n "$RUNNERS_NAMESPACE" --ignore-not-found=true
+              helm uninstall "$installation_name" -n "$RUNNERS_NAMESPACE" || echo "Runner set not installed"
+              
+              # Clean up DinD storage PVC if it exists
+              kubectl delete pvc "dind-storage-$installation_name" -n "$RUNNERS_NAMESPACE" --ignore-not-found=true
+              
+              # Clean up privileged hook extension ConfigMap if it exists
+              kubectl delete configmap "privileged-hook-extension-$installation_name" -n "$RUNNERS_NAMESPACE" --ignore-not-found=true
              
              echo "Runner scale set removed"
            }

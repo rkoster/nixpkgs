@@ -215,8 +215,8 @@ in {
       {
         name = "rkoster/rubionic-workspace";
         maxRunners = 5;
-        containerMode = "dind";            # Using Docker-in-Docker for BOSH Docker CPI compatibility
-        dockerCacheSize = "20Gi";          # Persistent volume claim for Docker layer caching
+        containerMode = "privileged-kubernetes";  # Using privileged Kubernetes mode for nested Docker support
+        dockerCacheSize = "20Gi";                 # Persistent volume claim for Docker layer caching
       }
       {
         name = "rkoster/opencode-workspace-action";
