@@ -215,7 +215,7 @@ in {
       {
         name = "rkoster/rubionic-workspace";
         maxRunners = 5;
-        containerMode = "privileged-kubernetes";  # Using privileged Kubernetes mode for nested Docker support
+        containerMode = "privileged-kubernetes";  # Back to privileged mode to debug cleanup issue
         dockerCacheSize = "20Gi";                 # Persistent volume claim for Docker layer caching
       }
       {
