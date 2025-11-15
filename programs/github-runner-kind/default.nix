@@ -32,7 +32,7 @@ let
       };
       
       containerMode = mkOption {
-        type = types.enum [ "dind" "kubernetes" "kubernetes-novolume" "privileged-kubernetes" "rootless" "rootless-docker" ];
+        type = types.enum [ "dind" "kubernetes" "kubernetes-novolume" "privileged-kubernetes" ];
         default = "kubernetes";
         description = "Container mode for runner (dind, kubernetes, kubernetes-novolume, privileged-kubernetes, rootless, or rootless-docker)";
       };
@@ -468,16 +468,25 @@ template:
       volumeMounts:
       - name: work
         mountPath: /home/runner/_work
-    containers:
-    - name: runner
-      env:
-      - name: ROOTLESS_CONTAINERS
-        value: "true"
-      - name: CONTAINER_RUNTIME
-        value: "podman"
-      volumeMounts:
-      - name: work
-        mountPath: /home/runner/_work
+     containers:
+     - name: runner
+       image: ghcr.io/actions/actions-runner:latest
+       env:
+       - name: ROOTLESS_CONTAINERS
+         value: "true"
+       - name: CONTAINER_RUNTIME
+         value: "podman"
+       - name: ACTIONS_RUNNER_CONTAINER_HOOKS
+         value: /home/runner/k8s/index.js
+       - name: ACTIONS_RUNNER_POD_NAME
+         valueFrom:
+           fieldRef:
+             fieldPath: metadata.name
+       - name: ACTIONS_RUNNER_REQUIRE_JOB_CONTAINER
+         value: "true"
+       volumeMounts:
+       - name: work
+         mountPath: /home/runner/_work
 EOF
                     else
                       # Use emptyDir when no cache is configured
@@ -508,15 +517,27 @@ template:
       securityContext:
         runAsUser: 0
       volumeMounts:
-      - name: runner-home
-        mountPath: /home/runner
-    containers:
-    - name: runner
-      env:
-      - name: ROOTLESS_CONTAINERS
-        value: "true"
-      - name: CONTAINER_RUNTIME
-        value: "podman"
+       - name: runner-home
+         mountPath: /home/runner
+     containers:
+     - name: runner
+       image: ghcr.io/actions/actions-runner:latest
+       env:
+       - name: ROOTLESS_CONTAINERS
+         value: "true"
+       - name: CONTAINER_RUNTIME
+         value: "podman"
+       - name: ACTIONS_RUNNER_CONTAINER_HOOKS
+         value: /home/runner/k8s/index.js
+       - name: ACTIONS_RUNNER_POD_NAME
+         valueFrom:
+           fieldRef:
+             fieldPath: metadata.name
+       - name: ACTIONS_RUNNER_REQUIRE_JOB_CONTAINER
+         value: "true"
+       volumeMounts:
+       - name: runner-home
+         mountPath: /home/runner
     volumes:
     - name: runner-home
       emptyDir: {}

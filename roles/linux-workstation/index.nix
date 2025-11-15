@@ -221,7 +221,7 @@ in {
       {
         name = "rkoster/opencode-workspace-action";
         maxRunners = 3;
-        containerMode = "rootless";        # Keep as rootless podman for now
+        containerMode = "dind";               # Docker-in-Docker mode for full Docker support
         dockerCacheSize = "15Gi";
       }
       {
