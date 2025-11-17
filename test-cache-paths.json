@@ -1,0 +1,4 @@
+[
+  { "name": "nix-store", "path": "/nix/store" },
+  { "path": "/var/lib/docker", "name": "docker-daemon" }
+]

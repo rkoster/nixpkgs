@@ -29,7 +29,12 @@ Add to your `home.nix`:
       {
         name = "myorg/myproject";
         maxRunners = 5;
-        dockerCacheSize = "20Gi";  # Enable 20GB Docker layer cache
+        containerMode = "privileged-kubernetes";
+        cachePaths = [
+          { path = "/nix/store"; name = "nix-store"; }
+          { path = "/root/.cache/nix"; name = "nix-cache"; }
+          { path = "/var/lib/docker"; name = "docker-daemon"; }
+        ];
       }
       {
         name = "myorg/another-project";
@@ -37,7 +42,6 @@ Add to your `home.nix`:
         minRunners = 1;
         containerMode = "kubernetes";
         instances = 3;  # Creates 3 separate runner scale sets
-        dockerCacheSize = "50Gi";  # Enable 50GB Docker layer cache for each instance
       }
     ];
   };
@@ -54,20 +58,51 @@ Add to your `home.nix`:
 - `minRunners` (default: 0): Minimum number of runners to keep available
 - `maxRunners` (default: 5): Maximum number of runners to scale to
 - `containerMode` (default: "kubernetes"): Container mode - "dind", "kubernetes", "kubernetes-novolume", "privileged-kubernetes", "rootless", or "rootless-docker"
-- `dockerCacheSize` (optional): Docker layer cache size (e.g., "20Gi", "50Gi"). When set, enables Docker image layer caching for faster builds
+- `cachePaths` (optional): List of paths to cache with hostPath volumes shared between workers (only for privileged-kubernetes mode). Each entry has `path` and `name` fields.
 - `dinDSidecar` (default: false): Enable Docker-in-Docker sidecar container for OpenCode workspace support
 - `dinDImage` (default: "docker:24-dind"): Docker-in-Docker image to use for sidecar container  
 - `dinDStorageSize` (optional): Docker storage size for DinD sidecar (e.g., "20Gi"). Uses emptyDir if not set
 
 **Note on Multiple Instances**: When `instances > 1`, separate runner scale sets are created with instance suffixes (e.g., `arc-runner-myorg-myproject-1`, `arc-runner-myorg-myproject-2`). This allows you to have different runner pools for the same repository.
 
-**Note on Docker Layer Caching**: When `dockerCacheSize` is specified, a persistent volume is attached to the Docker daemon for caching pulled and built image layers. This significantly speeds up subsequent builds by reusing Docker images across workflow runs.
+**Note on Cache Paths**: When `cachePaths` is specified for `privileged-kubernetes` mode, each cache path creates deterministic cache partitions based on `maxRunners`. Workers acquire cache partition slots (0 to maxRunners-1) using a locking mechanism, ensuring consistent cache assignment across job runs. Each partition is isolated at `/tmp/github-runner-cache/{installation-name}/{cache-name}/{partition-number}` on the kind host. This prevents conflicts (like Nix store corruption from concurrent access) while maximizing cache hits through consistent slot reuse.
 
 ### Global Options
 
 - `clusterName` (default: "github-runners"): Name for the shared kind cluster
 - `controllerNamespace` (default: "arc-systems"): Namespace for ARC controller pods
 - `runnersNamespace` (default: "arc-runners"): Namespace for runner pods
+
+## Nix and DevBox Caching
+
+For workflows that use Nix packages and DevBox, you can significantly improve build times by caching key directories. Each cache path creates deterministic cache partitions that are reused across workflow runs:
+
+```nix
+{
+  programs.github-runner-kind = {
+    enable = true;
+    repositories = [
+      {
+        name = "myorg/nix-project";
+        maxRunners = 3;  # Creates cache partitions 0, 1, 2
+        containerMode = "privileged-kubernetes";  # Required for cache mounts
+        cachePaths = [
+          # Each of the 3 cache partitions gets its own nix-store directory
+          { path = "/nix/store"; name = "nix-store"; }
+          # Each of the 3 cache partitions gets its own docker-daemon directory
+          { path = "/var/lib/docker"; name = "docker-daemon"; }
+        ];
+      }
+    ];
+  };
+}
+```
+
+This configuration creates deterministic cache partitions for:
+- **Nix Store** (`/nix/store`): Cached Nix packages and derivations used by DevBox
+- **Docker Daemon** (`/var/lib/docker`): Docker images and build cache for Docker-in-Docker operations
+
+With `maxRunners = 3` and 2 cache paths, the system creates 6 total cache directories (2 per partition) on the kind host. Workers acquire cache partition slots using a locking mechanism, ensuring consistent cache reuse across workflow runs while preventing Nix store conflicts.
 
 ## Usage
 

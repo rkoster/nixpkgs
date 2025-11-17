@@ -62,18 +62,71 @@ let
         description = "Number of runner scale set instances to create for this repository";
       };
       
-      dockerCacheSize = mkOption {
-        type = types.nullOr types.str;
-        default = null;
-        description = "Docker layer cache size (e.g., '20Gi', '50Gi'). When set, enables Docker image layer caching.";
-        example = "20Gi";
-      };
+
       
       buildCacheSize = mkOption {
         type = types.nullOr types.str;
         default = null;
         description = "Build artifacts cache size (e.g., '10Gi', '20Gi'). When set, enables build cache volume.";
         example = "10Gi";
+      };
+      
+      cachePaths = mkOption {
+        type = types.listOf (types.submodule {
+          options = {
+            path = mkOption {
+              type = types.str;
+              description = "Container path to cache";
+              example = "/nix/store";
+            };
+            name = mkOption {
+              type = types.str;
+              description = "Volume name identifier";
+              example = "nix-store";
+            };
+          };
+        });
+        default = [];
+        description = "List of paths to cache with hostPath volumes shared between workers (only for privileged-kubernetes mode)";
+        example = literalExpression ''
+          [
+            { path = "/nix/store"; name = "nix-store"; }
+            { path = "/var/lib/docker"; name = "docker-daemon"; }
+            { path = "/root/.cache/nix"; name = "nix-cache"; }
+          ]
+        '';
+      };
+
+      workVolumeClaimTemplate = mkOption {
+        type = types.nullOr (types.submodule {
+          options = {
+            storageClassName = mkOption {
+              type = types.str;
+              default = "standard";
+              description = "Storage class for work volume PVC";
+            };
+            accessModes = mkOption {
+              type = types.listOf types.str;
+              default = ["ReadWriteOnce"];
+              description = "Access modes for work volume PVC";
+            };
+            storage = mkOption {
+              type = types.str;
+              default = "10Gi";
+              description = "Storage size for work volume";
+              example = "10Gi";
+            };
+          };
+        });
+        default = null;
+        description = "Work volume claim template for sharing workspace between runner and job containers in kubernetes mode";
+        example = literalExpression ''
+          {
+            storageClassName = "standard";
+            accessModes = ["ReadWriteOnce"];
+            storage = "10Gi";
+          }
+        '';
       };
     };
   };
@@ -109,21 +162,24 @@ in
       description = "List of GitHub repositories to create runner scale sets for";
        example = literalExpression ''
           [
-            {
-              name = "myorg/project1";
-              maxRunners = 3;
-              dockerCacheSize = "20Gi";
-              buildCacheSize = "10Gi";
-            }
-            {
-              name = "myorg/project2";
-              maxRunners = 10;
-              instances = 3;
-              containerMode = "dind";
-              dockerCacheSize = "50Gi";
-              dinDSidecar = false;
-              dinDStorageSize = "20Gi";
-            }
+              {
+                name = "myorg/project1";
+                maxRunners = 3;
+                buildCacheSize = "10Gi";
+                containerMode = "privileged-kubernetes";
+                cachePaths = [
+                  { path = "/nix/store"; name = "nix-store"; }
+                  { path = "/var/lib/docker"; name = "docker-daemon"; }
+                ];
+              }
+             {
+               name = "myorg/project2";
+               maxRunners = 10;
+               instances = 3;
+               containerMode = "dind";
+               dinDSidecar = false;
+               dinDStorageSize = "20Gi";
+             }
           ]
         '';
     };
@@ -187,33 +243,35 @@ set -euo pipefail
           RUNNERS_NAMESPACE="${cfg.runnersNamespace}"
           CONFIG_DIR="${config.home.homeDirectory}/.config/github-runner-kind"
           
-           declare -A REPOS
-           declare -A INSTALLATION_NAMES
-           declare -A MIN_RUNNERS
-           declare -A MAX_RUNNERS
-           declare -A CONTAINER_MODES
-            declare -A DOCKER_CACHE_SIZES
+            declare -A REPOS
+            declare -A INSTALLATION_NAMES
+            declare -A MIN_RUNNERS
+            declare -A MAX_RUNNERS
+            declare -A CONTAINER_MODES
             declare -A BUILD_CACHE_SIZES
-           declare -A INSTANCE_IDS
-           declare -A DIND_SIDECARS
-           declare -A DIND_IMAGES
-           declare -A DIND_STORAGE_SIZES
+            declare -A CACHE_PATHS
+            declare -A INSTANCE_IDS
+            declare -A DIND_SIDECARS
+            declare -A DIND_IMAGES
+            declare -A DIND_STORAGE_SIZES
+            declare -A WORK_VOLUME_CLAIM_TEMPLATES
            
            ${concatStringsSep "\n" (map (instance: 
              let
                instanceKey = "${instance.name}:${toString instance.instanceId}";
              in ''
-             REPOS["${instanceKey}"]="${instance.name}"
-             INSTALLATION_NAMES["${instanceKey}"]="${instance.installationName}"
-             MIN_RUNNERS["${instanceKey}"]="${toString instance.minRunners}"
-             MAX_RUNNERS["${instanceKey}"]="${toString instance.maxRunners}"
-             CONTAINER_MODES["${instanceKey}"]="${instance.containerMode}"
-              DOCKER_CACHE_SIZES["${instanceKey}"]="${if instance.dockerCacheSize != null then instance.dockerCacheSize else ""}"
+              REPOS["${instanceKey}"]="${instance.name}"
+              INSTALLATION_NAMES["${instanceKey}"]="${instance.installationName}"
+              MIN_RUNNERS["${instanceKey}"]="${toString instance.minRunners}"
+              MAX_RUNNERS["${instanceKey}"]="${toString instance.maxRunners}"
+              CONTAINER_MODES["${instanceKey}"]="${instance.containerMode}"
               BUILD_CACHE_SIZES["${instanceKey}"]="${if instance.buildCacheSize != null then instance.buildCacheSize else ""}"
-             INSTANCE_IDS["${instanceKey}"]="${toString instance.instanceId}"
-             DIND_SIDECARS["${instanceKey}"]="${if instance.dinDSidecar then "true" else "false"}"
-             DIND_IMAGES["${instanceKey}"]="${instance.dinDImage}"
-             DIND_STORAGE_SIZES["${instanceKey}"]="${if instance.dinDStorageSize != null then instance.dinDStorageSize else ""}"
+              CACHE_PATHS["${instanceKey}"]='${builtins.toJSON instance.cachePaths}'
+              INSTANCE_IDS["${instanceKey}"]="${toString instance.instanceId}"
+              DIND_SIDECARS["${instanceKey}"]="${if instance.dinDSidecar then "true" else "false"}"
+              DIND_IMAGES["${instanceKey}"]="${instance.dinDImage}"
+              DIND_STORAGE_SIZES["${instanceKey}"]="${if instance.dinDStorageSize != null then instance.dinDStorageSize else ""}"
+              WORK_VOLUME_CLAIM_TEMPLATES["${instanceKey}"]='${if instance.workVolumeClaimTemplate != null then builtins.toJSON instance.workVolumeClaimTemplate else ""}'
            '') expandedInstances)}
           
           get_unique_repos() {
@@ -346,13 +404,14 @@ set -euo pipefail
                local installation_name="''${INSTALLATION_NAMES[$instance_key]}"
                local min_runners="''${MIN_RUNNERS[$instance_key]}"
                local max_runners="''${MAX_RUNNERS[$instance_key]}"
-               local container_mode="''${CONTAINER_MODES[$instance_key]}"
-                local docker_cache_size="''${DOCKER_CACHE_SIZES[$instance_key]}"
+                local container_mode="''${CONTAINER_MODES[$instance_key]}"
                 local build_cache_size="''${BUILD_CACHE_SIZES[$instance_key]}"
-               local instance_id="''${INSTANCE_IDS[$instance_key]}"
-               local dind_sidecar="''${DIND_SIDECARS[$instance_key]}"
-               local dind_image="''${DIND_IMAGES[$instance_key]}"
-               local dind_storage_size="''${DIND_STORAGE_SIZES[$instance_key]}"
+                local cache_paths="''${CACHE_PATHS[$instance_key]}"
+                local instance_id="''${INSTANCE_IDS[$instance_key]}"
+                local dind_sidecar="''${DIND_SIDECARS[$instance_key]}"
+                local dind_image="''${DIND_IMAGES[$instance_key]}"
+                local dind_storage_size="''${DIND_STORAGE_SIZES[$instance_key]}"
+                local work_volume_claim_template="''${WORK_VOLUME_CLAIM_TEMPLATES[$instance_key]}"
                
                echo "Deploying runner scale set for: $repo (instance $instance_id)"
                echo "Installation name: $installation_name"
@@ -401,582 +460,94 @@ set -euo pipefail
                    --set minRunners="$min_runners"
                    --set maxRunners="$max_runners"
                  )
-                
-                 # Configure container mode and Docker caching
-                 if [ "$container_mode" = "kubernetes" ] && [ -n "$docker_cache_size" ]; then
-                   echo "Configuring Kubernetes mode with Docker cache: $docker_cache_size"
-                   HELM_CMD+=(
-                     --set containerMode.type="kubernetes"
-                     --set containerMode.kubernetesModeWorkVolumeClaim.accessModes[0]="ReadWriteOnce"
-                     --set containerMode.kubernetesModeWorkVolumeClaim.storageClassName="standard"
-                     --set containerMode.kubernetesModeWorkVolumeClaim.resources.requests.storage="$docker_cache_size"
-                   )
-                 elif [ "$container_mode" = "kubernetes-novolume" ]; then
-                   echo "Configuring Kubernetes no-volume mode (uses lifecycle hooks)"
-                   HELM_CMD+=(
-                     --set containerMode.type="kubernetes-novolume"
-                   )
-                  elif [ "$container_mode" = "rootless" ]; then
-                    echo "Configuring rootless container mode (Podman/Buildah support)"
-                    HELM_CMD+=(
-                      --set containerMode.type="kubernetes"
-                      --set template.spec.securityContext.runAsNonRoot=true
-                      --set template.spec.securityContext.runAsUser=1000
-                      --set template.spec.securityContext.fsGroup=1000
-                    )
-                    
-                    # Add Docker cache volume if specified
-                    if [ -n "$docker_cache_size" ]; then
-                      echo "Configuring Docker layer cache for rootless mode: $docker_cache_size"
-                      HELM_CMD+=(
-                        --set containerMode.kubernetesModeWorkVolumeClaim.accessModes[0]="ReadWriteOnce"
-                        --set containerMode.kubernetesModeWorkVolumeClaim.storageClassName="standard"
-                        --set containerMode.kubernetesModeWorkVolumeClaim.resources.requests.storage="$docker_cache_size"
-                      )
-                    fi
-                    
-                    # Add init container to set up rootless container environment
-                    TEMP_INIT_VALUES=$(mktemp)
-                    if [ -n "$docker_cache_size" ]; then
-                      # Use persistent volume mount for rootless storage when cache is enabled
-                      cat > "$TEMP_INIT_VALUES" <<'EOF'
-template:
-  spec:
-    initContainers:
-    - name: setup-rootless-containers
-      image: alpine:latest
-      command: ["/bin/sh"]
-      args:
-      - -c
-      - |
-        echo "Setting up rootless container environment..."
-        mkdir -p /home/runner/.config/containers
-        mkdir -p /home/runner/.local/share/containers/storage
-        cat > /home/runner/.config/containers/containers.conf <<'CONTAINERS_CONF'
-        [containers]
-        userns = "auto"
-        cgroup_manager = "systemd"
-        netns = "auto"
-        [storage]
-        driver = "overlay"
-        graphroot = "/home/runner/_work/containers"
-        CONTAINERS_CONF
-        chown -R 1000:1000 /home/runner/.config /home/runner/.local /home/runner/_work
-        echo "Rootless container environment configured"
-      securityContext:
-        runAsUser: 0
-      volumeMounts:
-      - name: work
-        mountPath: /home/runner/_work
-     containers:
-     - name: runner
-       image: ghcr.io/actions/actions-runner:latest
-       env:
-       - name: ROOTLESS_CONTAINERS
-         value: "true"
-       - name: CONTAINER_RUNTIME
-         value: "podman"
-       - name: ACTIONS_RUNNER_CONTAINER_HOOKS
-         value: /home/runner/k8s/index.js
-       - name: ACTIONS_RUNNER_POD_NAME
-         valueFrom:
-           fieldRef:
-             fieldPath: metadata.name
-       - name: ACTIONS_RUNNER_REQUIRE_JOB_CONTAINER
-         value: "true"
-       volumeMounts:
-       - name: work
-         mountPath: /home/runner/_work
-EOF
-                    else
-                      # Use emptyDir when no cache is configured
-                      cat > "$TEMP_INIT_VALUES" <<'EOF'
-template:
-  spec:
-    initContainers:
-    - name: setup-rootless-containers
-      image: alpine:latest
-      command: ["/bin/sh"]
-      args:
-      - -c
-      - |
-        echo "Setting up rootless container environment..."
-        mkdir -p /home/runner/.config/containers
-        mkdir -p /home/runner/.local/share/containers/storage
-        cat > /home/runner/.config/containers/containers.conf <<'CONTAINERS_CONF'
-        [containers]
-        userns = "auto"
-        cgroup_manager = "systemd"
-        netns = "auto"
-        [storage]
-        driver = "overlay"
-        graphroot = "/home/runner/.local/share/containers/storage"
-        CONTAINERS_CONF
-        chown -R 1000:1000 /home/runner/.config /home/runner/.local
-        echo "Rootless container environment configured"
-      securityContext:
-        runAsUser: 0
-      volumeMounts:
-       - name: runner-home
-         mountPath: /home/runner
-     containers:
-     - name: runner
-       image: ghcr.io/actions/actions-runner:latest
-       env:
-       - name: ROOTLESS_CONTAINERS
-         value: "true"
-       - name: CONTAINER_RUNTIME
-         value: "podman"
-       - name: ACTIONS_RUNNER_CONTAINER_HOOKS
-         value: /home/runner/k8s/index.js
-       - name: ACTIONS_RUNNER_POD_NAME
-         valueFrom:
-           fieldRef:
-             fieldPath: metadata.name
-       - name: ACTIONS_RUNNER_REQUIRE_JOB_CONTAINER
-         value: "true"
-       volumeMounts:
-       - name: runner-home
-         mountPath: /home/runner
-    volumes:
-    - name: runner-home
-      emptyDir: {}
-EOF
-                    fi
-                    HELM_CMD+=(--values "$TEMP_INIT_VALUES")
-                  elif [ "$container_mode" = "rootless-docker" ]; then
-                    echo "Configuring rootless Docker daemon mode (full Docker API compatibility)"
-                    HELM_CMD+=(
-                      --set containerMode.type="kubernetes"
-                      --set template.spec.securityContext.runAsNonRoot=true
-                      --set template.spec.securityContext.runAsUser=1000
-                      --set template.spec.securityContext.fsGroup=1000
-                    )
-                    
-                    # Add Docker cache volume if specified
-                    if [ -n "$docker_cache_size" ]; then
-                      echo "Configuring Docker layer cache for rootless Docker: $docker_cache_size"
-                      HELM_CMD+=(
-                        --set containerMode.kubernetesModeWorkVolumeClaim.accessModes[0]="ReadWriteOnce"
-                        --set containerMode.kubernetesModeWorkVolumeClaim.storageClassName="standard"
-                        --set containerMode.kubernetesModeWorkVolumeClaim.resources.requests.storage="$docker_cache_size"
-                      )
-                    fi
-                    
-                    # Add init container to set up rootless Docker environment
-                    TEMP_INIT_VALUES=$(mktemp)
-                    if [ -n "$docker_cache_size" ]; then
-                      # Use persistent volume mount for Docker storage when cache is enabled
-                      cat > "$TEMP_INIT_VALUES" <<'EOF'
-template:
-  spec:
-    initContainers:
-    - name: setup-rootless-docker
-      image: alpine:latest
-      command: ["/bin/sh"]
-      args:
-      - -c
-      - |
-        echo "Setting up rootless Docker environment..."
-        
-        # Install Docker and enable rootless mode
-        apk add --no-cache curl uidmap
-        
-        # Set up directories
-        mkdir -p /home/runner/.config/docker
-        mkdir -p /home/runner/.local/share/docker
-        mkdir -p /home/runner/bin
-        
-        # Download and install rootless Docker
-        curl -fsSL https://get.docker.com/rootless | sh
-        
-        # Configure Docker daemon for rootless mode
-        cat > /home/runner/.config/docker/daemon.json <<'DAEMON_JSON'
-        {
-          "data-root": "/home/runner/_work/docker",
-          "storage-driver": "overlay2",
-          "userns-remap": "default",
-          "log-driver": "json-file",
-          "log-opts": {
-            "max-size": "100m"
-          }
-        }
-        DAEMON_JSON
-        
-        # Set up Docker environment script
-        cat > /home/runner/bin/setup-docker <<'SETUP_SCRIPT'
-        #!/bin/sh
-        export DOCKER_HOST=unix:///run/user/1000/docker.sock
-        export PATH="/home/runner/bin:$PATH"
-        
-        # Start rootless Docker daemon
-        if ! pgrep -f "dockerd-rootless" > /dev/null; then
-          echo "Starting rootless Docker daemon..."
-          dockerd-rootless.sh --data-root=/home/runner/_work/docker &
-          
-          # Wait for daemon to be ready
-          timeout=30
-          while ! docker info >/dev/null 2>&1; do
-            sleep 1
-            timeout=$((timeout - 1))
-            if [ "$timeout" -le 0 ]; then
-              echo "Error: Docker daemon failed to start"
-              exit 1
-            fi
-          done
-          echo "Rootless Docker daemon started successfully"
-        fi
-        SETUP_SCRIPT
-        
-        chmod +x /home/runner/bin/setup-docker
-        chown -R 1000:1000 /home/runner/.config /home/runner/.local /home/runner/_work /home/runner/bin
-        echo "Rootless Docker environment configured"
-      securityContext:
-        runAsUser: 0
-      volumeMounts:
-      - name: work
-        mountPath: /home/runner/_work
-    containers:
-    - name: runner
-      env:
-      - name: ROOTLESS_CONTAINERS
-        value: "true"
-      - name: CONTAINER_RUNTIME
-        value: "docker"
-      - name: DOCKER_HOST
-        value: "unix:///run/user/1000/docker.sock"
-      - name: PATH
-        value: "/home/runner/bin:$PATH"
-      volumeMounts:
-      - name: work
-        mountPath: /home/runner/_work
-EOF
-                    else
-                      # Use emptyDir when no cache is configured
-                      cat > "$TEMP_INIT_VALUES" <<'EOF'
-template:
-  spec:
-    initContainers:
-    - name: setup-rootless-docker
-      image: alpine:latest
-      command: ["/bin/sh"]
-      args:
-      - -c
-      - |
-        echo "Setting up rootless Docker environment (no cache)..."
-        
-        # Install Docker and enable rootless mode
-        apk add --no-cache curl uidmap
-        
-        # Set up directories
-        mkdir -p /home/runner/.config/docker
-        mkdir -p /home/runner/.local/share/docker
-        mkdir -p /home/runner/bin
-        
-        # Download and install rootless Docker
-        curl -fsSL https://get.docker.com/rootless | sh
-        
-        # Configure Docker daemon for rootless mode
-        cat > /home/runner/.config/docker/daemon.json <<'DAEMON_JSON'
-        {
-          "data-root": "/home/runner/.local/share/docker",
-          "storage-driver": "vfs",
-          "userns-remap": "default",
-          "log-driver": "json-file",
-          "log-opts": {
-            "max-size": "100m"
-          }
-        }
-        DAEMON_JSON
-        
-        # Set up Docker environment script
-        cat > /home/runner/bin/setup-docker <<'SETUP_SCRIPT'
-        #!/bin/sh
-        export DOCKER_HOST=unix:///run/user/1000/docker.sock
-        export PATH="/home/runner/bin:$PATH"
-        
-        # Start rootless Docker daemon
-        if ! pgrep -f "dockerd-rootless" > /dev/null; then
-          echo "Starting rootless Docker daemon..."
-          dockerd-rootless.sh --data-root=/home/runner/.local/share/docker &
-          
-          # Wait for daemon to be ready
-          timeout=30
-          while ! docker info >/dev/null 2>&1; do
-            sleep 1
-            timeout=$((timeout - 1))
-            if [ "$timeout" -le 0 ]; then
-              echo "Error: Docker daemon failed to start"
-              exit 1
-            fi
-          done
-          echo "Rootless Docker daemon started successfully"
-        fi
-        SETUP_SCRIPT
-        
-        chmod +x /home/runner/bin/setup-docker
-        chown -R 1000:1000 /home/runner/.config /home/runner/.local /home/runner/bin
-        echo "Rootless Docker environment configured"
-      securityContext:
-        runAsUser: 0
-    containers:
-    - name: runner
-      env:
-      - name: ROOTLESS_CONTAINERS
-        value: "true"
-      - name: CONTAINER_RUNTIME
-        value: "docker"
-      - name: DOCKER_HOST
-        value: "unix:///run/user/1000/docker.sock"
-      - name: PATH
-        value: "/home/runner/bin:$PATH"
-    volumes:
-    - name: runner-home
-      emptyDir: {}
-EOF
-                    fi
-                    HELM_CMD+=(--values "$TEMP_INIT_VALUES")
-                   elif [ "$container_mode" = "kubernetes" ]; then
-                    echo "Configuring Kubernetes mode"
-                    HELM_CMD+=(
-                      --set containerMode.type="kubernetes"
-                    )
-                   elif [ "$container_mode" = "privileged-kubernetes" ]; then
-                     echo "Configuring privileged Kubernetes mode with nested Docker support"
-                     # Don't set containerMode.type to avoid automatic template generation
+                   # Configure container mode
+                   if [ "$container_mode" = "kubernetes" ]; then
+                     echo "Configuring Kubernetes mode"
+                     HELM_CMD+=(
+                       --set containerMode.type="kubernetes"
+                     )
                      
-                     # Add Docker cache volume if specified
-                     if [ -n "$docker_cache_size" ]; then
-                       echo "Configuring Docker layer cache for privileged mode: $docker_cache_size"
-                       # We'll handle this in the template below
+                     # Add workVolumeClaimTemplate if specified
+                     if [ -n "$work_volume_claim_template" ] && [ "$work_volume_claim_template" != "" ]; then
+                       echo "Configuring work volume claim template for job containers"
+                       
+                       # Parse the JSON template
+                       storage_class=$(echo "$work_volume_claim_template" | jq -r '.storageClassName')
+                       access_modes=$(echo "$work_volume_claim_template" | jq -r '.accessModes | join(",")')
+                       storage=$(echo "$work_volume_claim_template" | jq -r '.storage')
+                       
+                       # Add kubernetesModeWorkVolumeClaim configuration to Helm 
+                       HELM_CMD+=(
+                         --set containerMode.kubernetesModeWorkVolumeClaim.storageClassName="$storage_class"
+                         --set-json containerMode.kubernetesModeWorkVolumeClaim.accessModes="$(echo "$work_volume_claim_template" | jq '.accessModes')"
+                         --set containerMode.kubernetesModeWorkVolumeClaim.resources.requests.storage="$storage"
+                       )
                      fi
                      
-                     # Create enhanced RBAC permissions for privileged-kubernetes mode
-                     echo "Creating enhanced RBAC permissions for privileged container operations..."
-                     cat <<EOF | kubectl apply -f -
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: $installation_name-privileged-manager
-  namespace: $RUNNERS_NAMESPACE
-  labels:
-    actions.github.com/scale-set-name: $installation_name
-    app.kubernetes.io/instance: $installation_name
-    app.kubernetes.io/component: privileged-manager-role
-rules:
-- apiGroups: [""]
-  resources: ["pods"]
-  verbs: ["create", "delete", "get", "list"]
-- apiGroups: [""]
-  resources: ["pods/status"]
-  verbs: ["get"]
-- apiGroups: [""]
-  resources: ["pods/exec"]
-  verbs: ["get", "create"]
-- apiGroups: [""]
-  resources: ["pods/log"]
-  verbs: ["get", "list", "watch"]
-- apiGroups: [""]
-  resources: ["secrets"]
-  verbs: ["create", "delete", "get", "list", "patch", "update"]
-- apiGroups: [""]
-  resources: ["serviceaccounts"]
-  verbs: ["create", "delete", "get", "list", "patch", "update"]
-- apiGroups: ["rbac.authorization.k8s.io"]
-  resources: ["rolebindings"]
-  verbs: ["create", "delete", "get", "patch", "update"]
-- apiGroups: ["rbac.authorization.k8s.io"]
-  resources: ["roles"]
-  verbs: ["create", "delete", "get", "patch", "update"]
-- apiGroups: ["batch"]
-  resources: ["jobs"]
-  verbs: ["get", "list", "create", "delete"]
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: $installation_name-privileged-pod-manager
-  namespace: $RUNNERS_NAMESPACE
-  labels:
-    actions.github.com/scale-set-name: $installation_name
-    app.kubernetes.io/instance: $installation_name
-    app.kubernetes.io/component: privileged-pod-manager-binding
-subjects:
-- kind: ServiceAccount
-  name: $installation_name-gha-rs-no-permission
-  namespace: $RUNNERS_NAMESPACE
-roleRef:
-  kind: Role
-  name: $installation_name-privileged-manager
-  apiGroup: rbac.authorization.k8s.io
-EOF
-                     
-                     # Create ConfigMap for privileged hook extension
-                     echo "Creating ConfigMap for privileged container hook extension..."
-                     cat <<EOF | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: privileged-hook-extension-$installation_name
-  namespace: $RUNNERS_NAMESPACE
-data:
-  content: |
-     metadata:
-       annotations:
-         privileged-containers.actions.github.com/enabled: "true"
-     spec:
-       securityContext:
-         runAsUser: 0
-         runAsGroup: 0
-         fsGroup: 0
-       containers:
-         - name: "\$job"
-           securityContext:
-             privileged: true
-             runAsUser: 0
-             runAsGroup: 0
-             allowPrivilegeEscalation: true
-             readOnlyRootFilesystem: false
-             capabilities:
-               add:
-                 - SYS_ADMIN
-                 - NET_ADMIN
-                 - SYS_PTRACE
-                 - SYS_CHROOT
-                 - SETFCAP
-                 - SETPCAP
-                 - NET_RAW
-                 - IPC_LOCK
-                 - SYS_RESOURCE
-                 - MKNOD
-                 - AUDIT_WRITE
-                 - AUDIT_CONTROL
-           volumeMounts:
-             - name: cgroup
-               mountPath: /sys/fs/cgroup
-               readOnly: false
-               mountPropagation: Bidirectional
-             - name: proc
-               mountPath: /proc
-               readOnly: false
-             - name: dev
-               mountPath: /dev
-               readOnly: false
-           env:
-             - name: SYSTEMD_IGNORE_CHROOT
-               value: "1"
-       volumes:
-         - name: cgroup
-           hostPath:
-             path: /sys/fs/cgroup
-             type: Directory
-         - name: proc
-           hostPath:
-             path: /proc
-             type: Directory
-         - name: dev
-           hostPath:
-             path: /dev
-             type: Directory
-       tolerations:
-         - key: node.kubernetes.io/not-ready
-           operator: Exists
-           effect: NoExecute
-           tolerationSeconds: 300
-         - key: node.kubernetes.io/unreachable
-           operator: Exists
-           effect: NoExecute
-           tolerationSeconds: 300
-EOF
-                     
-                     # Create complete template with privileged hook extension
-                     TEMP_PRIVILEGED_VALUES=$(mktemp)
-                     if [ -n "$docker_cache_size" ]; then
-                       # Template with persistent work volume for caching
-                       cat > "$TEMP_PRIVILEGED_VALUES" <<EOF
+                     # Add simple cache volume configuration for kubernetes mode
+                     if [ -n "$cache_paths" ] && [ "$cache_paths" != "[]" ]; then
+                       echo "Configuring cache volumes for instance $instance_id"
+                       
+                       # Create temporary values file for cache volumes
+                       TEMP_CACHE_VALUES=$(mktemp)
+                       cat > "$TEMP_CACHE_VALUES" <<EOF
 template:
   spec:
+    volumes:
+EOF
+                       
+                       # Add cache volumes
+                       TEMP_JSON=$(mktemp)
+                       printf '%s\n' "$cache_paths" > "$TEMP_JSON"
+                       cache_count=$(jq length < "$TEMP_JSON")
+                       for i in $(seq 0 $((cache_count-1))); do
+                         cache_name=$(jq -r ".[$i].name" < "$TEMP_JSON")
+                         cache_path=$(jq -r ".[$i].path" < "$TEMP_JSON")
+                         # Each instance gets its own dedicated cache directory
+                         host_cache_path="/tmp/github-runner-cache/$installation_name/$cache_name"
+                         cat >> "$TEMP_CACHE_VALUES" <<EOF
+    - name: cache-$cache_name
+      hostPath:
+        path: $host_cache_path
+        type: DirectoryOrCreate
+EOF
+                       done
+                       rm -f "$TEMP_JSON"
+                       
+                       # Add cache volume mounts to runner container
+                       cat >> "$TEMP_CACHE_VALUES" <<EOF
     containers:
     - name: runner
-      image: ghcr.io/actions/actions-runner:latest
-      command: ["/home/runner/run.sh"]
-      env:
-      - name: ACTIONS_RUNNER_CONTAINER_HOOKS
-        value: /home/runner/k8s/index.js
-      - name: ACTIONS_RUNNER_POD_NAME
-        valueFrom:
-          fieldRef:
-            fieldPath: metadata.name
-      - name: ACTIONS_RUNNER_REQUIRE_JOB_CONTAINER
-        value: "false"
-      - name: ACTIONS_RUNNER_CONTAINER_HOOK_TEMPLATE
-        value: "/etc/hooks/content"
       volumeMounts:
-      - name: work
-        mountPath: /home/runner/_work
-      - name: privileged-hook-extension
-        mountPath: /etc/hooks
-        readOnly: true
-    volumes:
-    - name: work
-      ephemeral:
-        volumeClaimTemplate:
-          spec:
-            accessModes: [ "ReadWriteOnce" ]
-            storageClassName: "standard"
-            resources:
-              requests:
-                storage: $docker_cache_size
-    - name: privileged-hook-extension
-      configMap:
-        name: privileged-hook-extension-$installation_name
 EOF
-                     else
-                       # Template without persistent storage
-                       cat > "$TEMP_PRIVILEGED_VALUES" <<EOF
-template:
-  spec:
-    containers:
-    - name: runner
-      image: ghcr.io/actions/actions-runner:latest
-      command: ["/home/runner/run.sh"]
-      env:
-      - name: ACTIONS_RUNNER_CONTAINER_HOOKS
-        value: /home/runner/k8s/index.js
-      - name: ACTIONS_RUNNER_POD_NAME
-        valueFrom:
-          fieldRef:
-            fieldPath: metadata.name
-      - name: ACTIONS_RUNNER_REQUIRE_JOB_CONTAINER
-        value: "false"
-      - name: ACTIONS_RUNNER_CONTAINER_HOOK_TEMPLATE
-        value: "/etc/hooks/content"
-      volumeMounts:
-      - name: work
-        mountPath: /home/runner/_work
-      - name: privileged-hook-extension
-        mountPath: /etc/hooks
-        readOnly: true
-    volumes:
-    - name: work
-      emptyDir: {}
-    - name: privileged-hook-extension
-      configMap:
-        name: privileged-hook-extension-$installation_name
+                       
+                       # Add cache volume mounts
+                       TEMP_JSON=$(mktemp)
+                       printf '%s\n' "$cache_paths" > "$TEMP_JSON"
+                       cache_count=$(jq length < "$TEMP_JSON")
+                       for i in $(seq 0 $((cache_count-1))); do
+                         cache_name=$(jq -r ".[$i].name" < "$TEMP_JSON")
+                         cache_path=$(jq -r ".[$i].path" < "$TEMP_JSON")
+                         cat >> "$TEMP_CACHE_VALUES" <<EOF
+      - name: cache-$cache_name
+        mountPath: $cache_path
 EOF
+                       done
+                       rm -f "$TEMP_JSON"
+                       
+                       HELM_CMD+=(--values "$TEMP_CACHE_VALUES")
                      fi
-                     
-                     HELM_CMD+=(--values "$TEMP_PRIVILEGED_VALUES")
-                  else
-                   echo "Configuring DIND mode"
-                   HELM_CMD+=(
-                     --set containerMode.type="dind"
-                   )
-                   if [ -n "$docker_cache_size" ]; then
-                     echo "Warning: Docker cache size specified but DIND mode doesn't support persistent volumes"
-                     echo "Consider switching to 'kubernetes' mode for Docker layer caching"
+                   elif [ "$container_mode" = "kubernetes-novolume" ]; then
+                    echo "Configuring Kubernetes no-volume mode (uses lifecycle hooks)"
+                    HELM_CMD+=(
+                      --set containerMode.type="kubernetes-novolume"
+                    )
+                   else
+                     echo "Configuring DIND mode"
+                     HELM_CMD+=(
+                       --set containerMode.type="dind"
+                     )
                    fi
-                 fi
                 
                   # Add DinD sidecar configuration if enabled
                   if [ "$dind_sidecar" = "true" ]; then
@@ -1109,10 +680,23 @@ EOF
                  pod -l app.kubernetes.io/instance="$installation_name" \
                  -n "$RUNNERS_NAMESPACE" || true
                
-                echo "Runner scale set deployed successfully"
-                if [ -n "$docker_cache_size" ]; then
-                  echo "Docker layer cache enabled with size: $docker_cache_size"
-                fi
+                 echo "Runner scale set deployed successfully"
+                 if [ -n "$cache_paths" ] && [ "$cache_paths" != "[]" ]; then
+                   echo "Deterministic cache partitions configured (workers reuse cache slots):"
+                   # Write JSON to temp file to avoid shell expansion issues
+                   TEMP_JSON=$(mktemp)
+                   printf '%s\n' "$cache_paths" > "$TEMP_JSON"
+                   cache_count=$(jq length < "$TEMP_JSON")
+                   for i in $(seq 0 $((cache_count-1))); do
+                     cache_name=$(jq -r ".[$i].name" < "$TEMP_JSON")
+                     cache_path=$(jq -r ".[$i].path" < "$TEMP_JSON")
+                     echo "  - $cache_path: partitioned into $max_runners slots (hostPath: /tmp/github-runner-cache/$installation_name/$cache_name/{0..$((max_runners-1))})"
+                   done
+                   rm -f "$TEMP_JSON"
+                   echo "  Total cache paths: $cache_count"
+                   echo "  Cache partitions: 0 to $((max_runners-1)) (reused across job runs)"
+                   echo "  Prevents Nix store conflicts and maximizes cache hits"
+                 fi
                 if [ -n "$build_cache_size" ]; then
                   echo "Build artifacts cache enabled with size: $build_cache_size"
                   echo "Cache available at: /runner/_work/_cache"
@@ -1131,9 +715,10 @@ EOF
              instance_key=$(parse_repo_instance "$arg")
              validate_instance "$instance_key"
              
-             local installation_name="''${INSTALLATION_NAMES[$instance_key]}"
-             local instance_id="''${INSTANCE_IDS[$instance_key]}"
-             local repo="''${REPOS[$instance_key]}"
+              local installation_name="''${INSTALLATION_NAMES[$instance_key]}"
+              local instance_id="''${INSTANCE_IDS[$instance_key]}"
+              local repo="''${REPOS[$instance_key]}"
+              local max_runners="''${MAX_RUNNERS[$instance_key]}"
              
              echo "Removing runner scale set: $installation_name (instance $instance_id for $repo)"
              
@@ -1144,17 +729,24 @@ EOF
              
              kubectl config use-context "kind-$CLUSTER_NAME"
              
-              helm uninstall "$installation_name" -n "$RUNNERS_NAMESPACE" || echo "Runner set not installed"
-              
-              # Clean up DinD storage PVC if it exists
-              kubectl delete pvc "dind-storage-$installation_name" -n "$RUNNERS_NAMESPACE" --ignore-not-found=true
-              
-              # Clean up privileged hook extension ConfigMap if it exists
-              kubectl delete configmap "privileged-hook-extension-$installation_name" -n "$RUNNERS_NAMESPACE" --ignore-not-found=true
-              
-              # Clean up privileged-kubernetes RBAC resources if they exist
-              kubectl delete rolebinding "$installation_name-privileged-pod-manager" -n "$RUNNERS_NAMESPACE" --ignore-not-found=true
-              kubectl delete role "$installation_name-privileged-manager" -n "$RUNNERS_NAMESPACE" --ignore-not-found=true
+                helm uninstall "$installation_name" -n "$RUNNERS_NAMESPACE" || echo "Runner set not installed"
+                
+                # Clean up DinD storage PVC if it exists
+                kubectl delete pvc "dind-storage-$installation_name" -n "$RUNNERS_NAMESPACE" --ignore-not-found=true
+                
+                # Clean up cache partition locks
+                rm -rf "/tmp/github-runner-cache-locks/$installation_name" 2>/dev/null || true
+                
+                # Note: hostPath cache directories are not cleaned up automatically
+                echo "Note: Cache partitions persist at /tmp/github-runner-cache/$installation_name/{cache-name}/{0..$((max_runners-1))} on kind host"
+                echo "Note: Cache locks cleaned up from /tmp/github-runner-cache-locks/$installation_name/"
+               
+               # Clean up privileged hook extension ConfigMap if it exists
+               kubectl delete configmap "privileged-hook-extension-$installation_name" -n "$RUNNERS_NAMESPACE" --ignore-not-found=true
+               
+               # Clean up privileged-kubernetes RBAC resources if they exist
+               kubectl delete rolebinding "$installation_name-privileged-pod-manager" -n "$RUNNERS_NAMESPACE" --ignore-not-found=true
+               kubectl delete role "$installation_name-privileged-manager" -n "$RUNNERS_NAMESPACE" --ignore-not-found=true
              
              echo "Runner scale set removed"
            }

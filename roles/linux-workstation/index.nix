@@ -214,21 +214,29 @@ in {
     repositories = [
       {
         name = "rkoster/rubionic-workspace";
-        maxRunners = 5;
-        containerMode = "privileged-kubernetes";  # Back to privileged mode to debug cleanup issue
-        dockerCacheSize = "20Gi";                 # Persistent volume claim for Docker layer caching
+        instances = 3;      # Create 3 separate AutoscalingRunnerSets  
+        maxRunners = 1;     # Each set scales 0-1 runners for cache isolation
+        containerMode = "kubernetes";
+        workVolumeClaimTemplate = {
+          storageClassName = "standard";
+          accessModes = ["ReadWriteOnce"];
+          storage = "10Gi";
+        };
+        cachePaths = [
+          # Re-enable cache paths - each instance gets dedicated cache
+          { path = "/nix/store"; name = "nix-store"; }
+          { path = "/var/lib/docker"; name = "docker-daemon"; }
+        ];
       }
       {
         name = "rkoster/opencode-workspace-action";
         maxRunners = 3;
         containerMode = "dind";               # Docker-in-Docker mode for full Docker support
-        dockerCacheSize = "15Gi";
       }
       {
         name = "rkoster/instant-bosh";
         maxRunners = 2;
         containerMode = "kubernetes";      # Keep as standard Kubernetes mode (no container nesting needed)
-        dockerCacheSize = "15Gi";
       }
     ];
   };
