@@ -237,6 +237,11 @@ in {
         name = "rkoster/instant-bosh";
         maxRunners = 2;
         containerMode = "kubernetes";      # Keep as standard Kubernetes mode (no container nesting needed)
+        workVolumeClaimTemplate = {
+          storageClassName = "standard";
+          accessModes = ["ReadWriteOnce"];
+          storage = "10Gi";
+        };
       }
     ];
   };
