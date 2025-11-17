@@ -216,7 +216,7 @@ in {
         name = "rkoster/rubionic-workspace";
         instances = 3;      # Create 3 separate AutoscalingRunnerSets  
         maxRunners = 1;     # Each set scales 0-1 runners for cache isolation
-        containerMode = "kubernetes";
+        containerMode = "privileged-kubernetes";  # Keep privileged mode for OpenCode workflows
         workVolumeClaimTemplate = {
           storageClassName = "standard";
           accessModes = ["ReadWriteOnce"];
