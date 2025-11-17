@@ -1,6 +1,10 @@
 # nixpkgs
 Home Manager config
 
+## Architecture Documentation
+
+- **[GitHub Actions Runner Architecture](./docs/github-runner-architecture.md)** - Multi-AutoscalingRunnerSet design with issue number modulo load balancing
+
 ## macOS Installation
 
 ### Install Nix
