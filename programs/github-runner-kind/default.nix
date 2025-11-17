@@ -484,9 +484,158 @@ set -euo pipefail
                         )
                       fi
                       
-                      # Add privileged template values for OpenCode workflows
-                      TEMP_PRIVILEGED_VALUES=$(mktemp)
-                      cat > "$TEMP_PRIVILEGED_VALUES" <<EOF
+                       # Add privileged template values for OpenCode workflows (no work volume definition)
+                       TEMP_PRIVILEGED_VALUES=$(mktemp)
+                       cat > "$TEMP_PRIVILEGED_VALUES" <<EOF
+template:
+  spec:
+    securityContext:
+      runAsUser: 0
+      runAsGroup: 0
+      fsGroup: 0
+    containers:
+    - name: "\$job"
+      securityContext:
+        privileged: true
+        runAsUser: 0
+        runAsGroup: 0
+        allowPrivilegeEscalation: true
+        readOnlyRootFilesystem: false
+        capabilities:
+          add:
+            - SYS_ADMIN
+            - NET_ADMIN
+            - SYS_PTRACE
+            - SYS_CHROOT
+            - SETFCAP
+            - SETPCAP
+            - NET_RAW
+            - IPC_LOCK
+            - SYS_RESOURCE
+            - MKNOD
+            - AUDIT_WRITE
+            - AUDIT_CONTROL
+      volumeMounts:
+        - name: cgroup
+          mountPath: /sys/fs/cgroup
+          readOnly: false
+        - name: proc
+          mountPath: /proc
+          readOnly: false
+        - name: dev
+          mountPath: /dev
+          readOnly: false
+EOF
+                       # Add cache volume mounts to the privileged template  
+                       if [ -n "$cache_paths" ] && [ "$cache_paths" != "[]" ]; then
+                         echo "Configuring cache volumes for instance $instance_id"
+                         
+                         # First add the cache volume mounts to volumeMounts section
+                         TEMP_JSON=$(mktemp)
+                         printf '%s\n' "$cache_paths" > "$TEMP_JSON"
+                         cache_count=$(jq length < "$TEMP_JSON")
+                         for i in $(seq 0 $((cache_count-1))); do
+                           cache_name=$(jq -r ".[$i].name" < "$TEMP_JSON")
+                           cache_path=$(jq -r ".[$i].path" < "$TEMP_JSON")
+                           # Add cache volume mount to job container volumeMounts section
+                           cat >> "$TEMP_PRIVILEGED_VALUES" <<EOF
+        - name: cache-$cache_name
+          mountPath: $cache_path
+EOF
+                         done
+                         rm -f "$TEMP_JSON"
+                         
+                         # Close the volumeMounts section and add env section end
+                         cat >> "$TEMP_PRIVILEGED_VALUES" <<EOF
+      env:
+        - name: SYSTEMD_IGNORE_CHROOT
+          value: "1"
+    volumes:
+      - name: cgroup
+        hostPath:
+          path: /sys/fs/cgroup
+          type: Directory
+      - name: proc
+        hostPath:
+          path: /proc
+          type: Directory
+      - name: dev
+        hostPath:
+          path: /dev
+          type: Directory
+EOF
+                         
+                         # Now add cache volumes to volumes section
+                         TEMP_JSON=$(mktemp)
+                         printf '%s\n' "$cache_paths" > "$TEMP_JSON"
+                         cache_count=$(jq length < "$TEMP_JSON")
+                         for i in $(seq 0 $((cache_count-1))); do
+                           cache_name=$(jq -r ".[$i].name" < "$TEMP_JSON")
+                           host_cache_path="/tmp/github-runner-cache/$installation_name/$cache_name"
+                           cat >> "$TEMP_PRIVILEGED_VALUES" <<EOF
+      - name: cache-$cache_name
+        hostPath:
+          path: $host_cache_path
+          type: DirectoryOrCreate
+EOF
+                         done
+                         rm -f "$TEMP_JSON"
+                       else
+                         # No cache paths, just close the template properly  
+                         cat >> "$TEMP_PRIVILEGED_VALUES" <<EOF
+      env:
+        - name: SYSTEMD_IGNORE_CHROOT
+          value: "1"
+    volumes:
+      - name: cgroup
+        hostPath:
+          path: /sys/fs/cgroup
+          type: Directory
+      - name: proc
+        hostPath:
+          path: /proc
+          type: Directory
+      - name: dev
+        hostPath:
+          path: /dev
+          type: Directory
+EOF
+                       fi
+                       
+                       HELM_CMD+=(--values "$TEMP_PRIVILEGED_VALUES")
+                   elif [ "$container_mode" = "kubernetes-novolume" ]; then
+                    echo "Configuring Kubernetes no-volume mode (uses lifecycle hooks)"
+                    HELM_CMD+=(
+                      --set containerMode.type="kubernetes-novolume"
+                    )
+                   elif [ "$container_mode" = "privileged-kubernetes" ]; then
+                     echo "Configuring privileged Kubernetes mode with workVolumeClaimTemplate support"
+                     
+                     # Use kubernetes mode with workVolumeClaimTemplate for proper PVC handling
+                     HELM_CMD+=(
+                       --set containerMode.type="kubernetes"
+                     )
+                     
+                     # Add workVolumeClaimTemplate for job containers
+                     if [ -n "$work_volume_claim_template" ] && [ "$work_volume_claim_template" != "" ]; then
+                       echo "Configuring work volume claim template for privileged job containers"
+                       
+                       # Parse the JSON template
+                       storage_class=$(echo "$work_volume_claim_template" | jq -r '.storageClassName')
+                       access_modes=$(echo "$work_volume_claim_template" | jq -r '.accessModes | join(",")')
+                       storage=$(echo "$work_volume_claim_template" | jq -r '.storage')
+                       
+                       # Add kubernetesModeWorkVolumeClaim configuration to Helm 
+                       HELM_CMD+=(
+                         --set containerMode.kubernetesModeWorkVolumeClaim.storageClassName="$storage_class"
+                         --set-json containerMode.kubernetesModeWorkVolumeClaim.accessModes="$(echo "$work_volume_claim_template" | jq '.accessModes')"
+                         --set containerMode.kubernetesModeWorkVolumeClaim.resources.requests.storage="$storage"
+                       )
+                     fi
+                     
+                     # Create privileged template values that override the kubernetes mode template
+                     TEMP_PRIVILEGED_VALUES=$(mktemp)
+                     cat > "$TEMP_PRIVILEGED_VALUES" <<EOF
 template:
   spec:
     securityContext:
@@ -542,328 +691,31 @@ template:
           path: /dev
           type: Directory
 EOF
-                      HELM_CMD+=(--values "$TEMP_PRIVILEGED_VALUES")
                       
-                      # Add simple cache volume configuration for kubernetes mode
+                      # Add cache volume mounts - each instance gets dedicated cache
                       if [ -n "$cache_paths" ] && [ "$cache_paths" != "[]" ]; then
-                        echo "Configuring cache volumes for instance $instance_id"
-                        
-                        # Create temporary values file for cache volumes
-                        TEMP_CACHE_VALUES=$(mktemp)
-                        cat > "$TEMP_CACHE_VALUES" <<EOF
-template:
-  spec:
-    volumes:
-EOF
-                        
-                        # Add cache volumes
+                        echo "Configuring cache volumes for privileged instance $instance_id"
                         TEMP_JSON=$(mktemp)
                         printf '%s\n' "$cache_paths" > "$TEMP_JSON"
                         cache_count=$(jq length < "$TEMP_JSON")
                         for i in $(seq 0 $((cache_count-1))); do
                           cache_name=$(jq -r ".[$i].name" < "$TEMP_JSON")
                           cache_path=$(jq -r ".[$i].path" < "$TEMP_JSON")
-                          # Each instance gets its own dedicated cache directory
+                          cat >> "$TEMP_PRIVILEGED_VALUES" <<EOF
+        - name: cache-$cache_name
+          mountPath: $cache_path
+EOF
+                          # Add cache volumes
                           host_cache_path="/tmp/github-runner-cache/$installation_name/$cache_name"
-                          cat >> "$TEMP_CACHE_VALUES" <<EOF
-    - name: cache-$cache_name
-      hostPath:
-        path: $host_cache_path
-        type: DirectoryOrCreate
-EOF
-                        done
-                        rm -f "$TEMP_JSON"
-                        
-                        # Add cache volume mounts to job container
-                        cat >> "$TEMP_CACHE_VALUES" <<EOF
-    containers:
-    - name: "\$job"
-      volumeMounts:
-EOF
-                        
-                        # Add cache volume mounts
-                        TEMP_JSON=$(mktemp)
-                        printf '%s\n' "$cache_paths" > "$TEMP_JSON"
-                        cache_count=$(jq length < "$TEMP_JSON")
-                        for i in $(seq 0 $((cache_count-1))); do
-                          cache_name=$(jq -r ".[$i].name" < "$TEMP_JSON")
-                          cache_path=$(jq -r ".[$i].path" < "$TEMP_JSON")
-                          cat >> "$TEMP_CACHE_VALUES" <<EOF
+                          cat >> "$TEMP_PRIVILEGED_VALUES" <<EOF
       - name: cache-$cache_name
-        mountPath: $cache_path
+        hostPath:
+          path: $host_cache_path
+          type: DirectoryOrCreate
 EOF
                         done
                         rm -f "$TEMP_JSON"
-                        
-                        HELM_CMD+=(--values "$TEMP_CACHE_VALUES")
                       fi
-                   elif [ "$container_mode" = "kubernetes-novolume" ]; then
-                    echo "Configuring Kubernetes no-volume mode (uses lifecycle hooks)"
-                    HELM_CMD+=(
-                      --set containerMode.type="kubernetes-novolume"
-                    )
-                   elif [ "$container_mode" = "privileged-kubernetes" ]; then
-                     echo "Configuring privileged Kubernetes mode with workVolumeClaimTemplate support"
-                     # Don't set containerMode.type to avoid automatic template generation
-                     
-                     # Add workVolumeClaimTemplate support for privileged mode
-                     if [ -n "$work_volume_claim_template" ] && [ "$work_volume_claim_template" != "" ]; then
-                       echo "Configuring work volume claim template for privileged job containers"
-                     fi
-                     
-                     # Create enhanced RBAC permissions for privileged-kubernetes mode
-                     echo "Creating enhanced RBAC permissions for privileged container operations..."
-                     cat <<EOF | kubectl apply -f -
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: $installation_name-privileged-manager
-  namespace: $RUNNERS_NAMESPACE
-  labels:
-    actions.github.com/scale-set-name: $installation_name
-    app.kubernetes.io/instance: $installation_name
-    app.kubernetes.io/component: privileged-manager-role
-rules:
-- apiGroups: [""]
-  resources: ["pods"]
-  verbs: ["create", "delete", "get", "list"]
-- apiGroups: [""]
-  resources: ["pods/status"]
-  verbs: ["get"]
-- apiGroups: [""]
-  resources: ["pods/exec"]
-  verbs: ["get", "create"]
-- apiGroups: [""]
-  resources: ["pods/log"]
-  verbs: ["get", "list", "watch"]
-- apiGroups: [""]
-  resources: ["secrets"]
-  verbs: ["create", "delete", "get", "list", "patch", "update"]
-- apiGroups: [""]
-  resources: ["serviceaccounts"]
-  verbs: ["create", "delete", "get", "list", "patch", "update"]
-- apiGroups: ["rbac.authorization.k8s.io"]
-  resources: ["rolebindings"]
-  verbs: ["create", "delete", "get", "patch", "update"]
-- apiGroups: ["rbac.authorization.k8s.io"]
-  resources: ["roles"]
-  verbs: ["create", "delete", "get", "patch", "update"]
-- apiGroups: ["batch"]
-  resources: ["jobs"]
-  verbs: ["get", "list", "create", "delete"]
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: $installation_name-privileged-pod-manager
-  namespace: $RUNNERS_NAMESPACE
-  labels:
-    actions.github.com/scale-set-name: $installation_name
-    app.kubernetes.io/instance: $installation_name
-    app.kubernetes.io/component: privileged-pod-manager-binding
-subjects:
-- kind: ServiceAccount
-  name: $installation_name-gha-rs-no-permission
-  namespace: $RUNNERS_NAMESPACE
-roleRef:
-  kind: Role
-  name: $installation_name-privileged-manager
-  apiGroup: rbac.authorization.k8s.io
-EOF
-                     
-                      # Create ConfigMap for privileged hook extension with workVolumeClaimTemplate support
-                      echo "Creating ConfigMap for privileged container hook extension..."
-                      cat <<EOF | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: privileged-hook-extension-$installation_name
-  namespace: $RUNNERS_NAMESPACE
-data:
-  content: |
-     metadata:
-       annotations:
-         privileged-containers.actions.github.com/enabled: "true"
-     spec:
-       securityContext:
-         runAsUser: 0
-         runAsGroup: 0
-         fsGroup: 0
-       containers:
-         - name: "\$job"
-           securityContext:
-             privileged: true
-             runAsUser: 0
-             runAsGroup: 0
-             allowPrivilegeEscalation: true
-             readOnlyRootFilesystem: false
-             capabilities:
-               add:
-                 - SYS_ADMIN
-                 - NET_ADMIN
-                 - SYS_PTRACE
-                 - SYS_CHROOT
-                 - SETFCAP
-                 - SETPCAP
-                 - NET_RAW
-                 - IPC_LOCK
-                 - SYS_RESOURCE
-                 - MKNOD
-                 - AUDIT_WRITE
-                 - AUDIT_CONTROL
-           volumeMounts:
-             - name: cgroup
-               mountPath: /sys/fs/cgroup
-               readOnly: false
-               mountPropagation: Bidirectional
-             - name: proc
-               mountPath: /proc
-               readOnly: false
-             - name: dev
-               mountPath: /dev
-               readOnly: false
-           env:
-             - name: SYSTEMD_IGNORE_CHROOT
-               value: "1"
-       volumes:
-EOF
-                     
-                      # Add system volumes for privileged containers
-                      cat <<EOF | kubectl patch configmap privileged-hook-extension-$installation_name -n $RUNNERS_NAMESPACE --type merge -p '
-data:
-  content: |
-     metadata:
-       annotations:
-         privileged-containers.actions.github.com/enabled: "true"
-     spec:
-       securityContext:
-         runAsUser: 0
-         runAsGroup: 0
-         fsGroup: 0
-       containers:
-         - name: "\$job"
-           securityContext:
-             privileged: true
-             runAsUser: 0
-             runAsGroup: 0
-             allowPrivilegeEscalation: true
-             readOnlyRootFilesystem: false
-             capabilities:
-               add:
-                 - SYS_ADMIN
-                 - NET_ADMIN
-                 - SYS_PTRACE
-                 - SYS_CHROOT
-                 - SETFCAP
-                 - SETPCAP
-                 - NET_RAW
-                 - IPC_LOCK
-                 - SYS_RESOURCE
-                 - MKNOD
-                 - AUDIT_WRITE
-                 - AUDIT_CONTROL
-           volumeMounts:
-             - name: cgroup
-               mountPath: /sys/fs/cgroup
-               readOnly: false
-               mountPropagation: Bidirectional
-             - name: proc
-               mountPath: /proc
-               readOnly: false
-             - name: dev
-               mountPath: /dev
-               readOnly: false
-           env:
-             - name: SYSTEMD_IGNORE_CHROOT
-               value: "1"
-       volumes:
-         - name: cgroup
-           hostPath:
-             path: /sys/fs/cgroup
-             type: Directory
-         - name: proc
-           hostPath:
-             path: /proc
-             type: Directory
-         - name: dev
-           hostPath:
-             path: /dev
-             type: Directory
-'
-EOF
-                     
-                     # Create simplified template for privileged mode with dedicated cache per instance
-                     TEMP_PRIVILEGED_VALUES=$(mktemp)
-                     cat > "$TEMP_PRIVILEGED_VALUES" <<EOF
-template:
-  spec:
-    containers:
-    - name: runner
-      image: ghcr.io/actions/actions-runner:latest
-      command: ["/home/runner/run.sh"]
-      env:
-      - name: ACTIONS_RUNNER_CONTAINER_HOOKS
-        value: /home/runner/k8s/index.js
-      - name: ACTIONS_RUNNER_POD_NAME
-        valueFrom:
-          fieldRef:
-            fieldPath: metadata.name
-      - name: ACTIONS_RUNNER_REQUIRE_JOB_CONTAINER
-        value: "false"
-      - name: ACTIONS_RUNNER_CONTAINER_HOOK_TEMPLATE
-        value: "/etc/hooks/content"
-      volumeMounts:
-      - name: work
-        mountPath: /home/runner/_work
-      - name: privileged-hook-extension
-        mountPath: /etc/hooks
-        readOnly: true
-EOF
-
-                     # Add cache volume mounts - each instance gets dedicated cache (no partitioning needed)
-                     if [ -n "$cache_paths" ] && [ "$cache_paths" != "[]" ]; then
-                       TEMP_JSON=$(mktemp)
-                       printf '%s\n' "$cache_paths" > "$TEMP_JSON"
-                       cache_count=$(jq length < "$TEMP_JSON")
-                       for i in $(seq 0 $((cache_count-1))); do
-                         cache_name=$(jq -r ".[$i].name" < "$TEMP_JSON")
-                         cache_path=$(jq -r ".[$i].path" < "$TEMP_JSON")
-                         cat >> "$TEMP_PRIVILEGED_VALUES" <<EOF
-      - name: cache-$cache_name
-        mountPath: $cache_path
-EOF
-                       done
-                       rm -f "$TEMP_JSON"
-                     fi
-                     
-                     # Add volumes section
-                     cat >> "$TEMP_PRIVILEGED_VALUES" <<EOF
-    volumes:
-    - name: work
-      emptyDir: {}
-    - name: privileged-hook-extension
-      configMap:
-        name: privileged-hook-extension-$installation_name
-EOF
-
-                     # Add cache volumes - dedicated directory per instance (no partitioning complexity)
-                     if [ -n "$cache_paths" ] && [ "$cache_paths" != "[]" ]; then
-                       TEMP_JSON=$(mktemp)
-                       printf '%s\n' "$cache_paths" > "$TEMP_JSON"
-                       cache_count=$(jq length < "$TEMP_JSON")
-                       for i in $(seq 0 $((cache_count-1))); do
-                         cache_name=$(jq -r ".[$i].name" < "$TEMP_JSON")
-                         # Each instance gets dedicated cache directory - no partitioning needed
-                         host_cache_path="/tmp/github-runner-cache/$installation_name/$cache_name"
-                         cat >> "$TEMP_PRIVILEGED_VALUES" <<EOF
-    - name: cache-$cache_name
-      hostPath:
-        path: $host_cache_path
-        type: DirectoryOrCreate
-EOF
-                       done
-                       rm -f "$TEMP_JSON"
-                     fi
                      
                      HELM_CMD+=(--values "$TEMP_PRIVILEGED_VALUES")
                    else
