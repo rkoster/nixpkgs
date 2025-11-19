@@ -1,0 +1,40 @@
+template:
+  spec:
+    securityContext:
+      runAsUser: 0
+      runAsGroup: 0
+      fsGroup: 0
+    containers:
+    - name: runner
+      image: ghcr.io/actions/actions-runner:latest
+      securityContext:
+        privileged: true
+        runAsUser: 0
+        runAsGroup: 0
+        allowPrivilegeEscalation: true
+        readOnlyRootFilesystem: false
+        capabilities:
+          add:
+            - SYS_ADMIN
+            - NET_ADMIN
+            - SYS_PTRACE
+            - SYS_CHROOT
+            - SETFCAP
+            - SETPCAP
+            - NET_RAW
+            - IPC_LOCK
+            - SYS_RESOURCE
+            - MKNOD
+            - AUDIT_WRITE
+            - AUDIT_CONTROL
+      env:
+        - name: SYSTEMD_IGNORE_CHROOT
+          value: "1"
+      volumeMounts:
+        - name: work
+          mountPath: /home/runner/_work
+        # CACHE_VOLUME_MOUNTS will be dynamically inserted here
+    volumes:
+      - name: work
+        emptyDir: {}
+      # CACHE_VOLUMES will be dynamically inserted here

@@ -1,0 +1,35 @@
+template:
+  spec:
+    env:
+    - name: DOCKER_HOST
+      value: tcp://localhost:2375
+    containers:
+    - name: runner
+      image: ghcr.io/actions/actions-runner:latest
+      env:
+      - name: DOCKER_HOST
+        value: tcp://localhost:2375
+    - name: dind
+      image: DIND_IMAGE_PLACEHOLDER
+      securityContext:
+        privileged: true
+      env:
+      - name: DOCKER_TLS_CERTDIR
+        value: ""
+      ports:
+      - containerPort: 2375
+        name: docker
+        protocol: TCP
+      resources:
+        requests:
+          cpu: "500m"
+          memory: "1Gi"
+        limits:
+          cpu: "1"
+          memory: "2Gi"
+      volumeMounts:
+      - name: docker-storage
+        mountPath: /var/lib/docker
+    volumes:
+    - name: docker-storage
+      # STORAGE_TYPE will be dynamically replaced with either persistentVolumeClaim or emptyDir

@@ -214,34 +214,22 @@ in {
     repositories = [
       {
         name = "rkoster/rubionic-workspace";
-        instances = 3;      # Create 3 separate AutoscalingRunnerSets  
-        maxRunners = 1;     # Each set scales 0-1 runners for cache isolation
-        containerMode = "kubernetes";  # Use standard Kubernetes mode with privileged template
-        workVolumeClaimTemplate = {
-          storageClassName = "standard";
-          accessModes = ["ReadWriteOnce"];
-          storage = "10Gi";
-        };
+        instances = 3;      # Create 3 separate AutoscalingRunnerSets with maxRunners=1 each for cache isolation
+        type = "cached-privileged-kubernetes";  # Use cached privileged mode for systemd/cgroup access
         cachePaths = [
-          # Re-enable cache paths - each instance gets dedicated cache
           { path = "/nix/store"; name = "nix-store"; }
           { path = "/var/lib/docker"; name = "docker-daemon"; }
         ];
       }
       {
         name = "rkoster/opencode-workspace-action";
-        maxRunners = 3;
-        containerMode = "dind";               # Docker-in-Docker mode for full Docker support
+        maxRunners = 3;     # Single instance with multiple runners
+        type = "dind";               # Docker-in-Docker mode for full Docker support
       }
       {
         name = "rkoster/instant-bosh";
-        maxRunners = 2;
-        containerMode = "kubernetes";      # Keep as standard Kubernetes mode (no container nesting needed)
-        workVolumeClaimTemplate = {
-          storageClassName = "standard";
-          accessModes = ["ReadWriteOnce"];
-          storage = "10Gi";
-        };
+        maxRunners = 2;     # Single instance with multiple runners
+        type = "kubernetes";      # Keep as standard Kubernetes mode (no container nesting needed)
       }
     ];
   };
