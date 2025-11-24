@@ -107,6 +107,9 @@ in {
     
     # VM management with Firecracker
     firecracker
+    
+    # GitHub Actions local runner
+    deskrun
   ];
 
   programs.direnv = {

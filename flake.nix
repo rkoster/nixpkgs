@@ -15,6 +15,7 @@
     flake-parts.url = "github:hercules-ci/flake-parts";
     ghostty.url = "github:ghostty-org/ghostty";
     bosh-oci-builder.url = "git+https://github.com/rkoster/bosh-oci-builder";
+    deskrun.url = "github:rkoster/deskrun";
   };
 
   outputs = inputs:
@@ -29,6 +30,7 @@
 
         fly-overlay = import ./overlays/fly-versions.nix;
         local-pkgs-overlay = import ./overlays/local-pkgs.nix;
+        external-flakes-overlay = import ./overlays/external-flakes.nix inputs;
         # libfaketime-fix-overlay = import ./overlays/libfaketime-fix.nix;
         # texlive-fix-overlay = import ./overlays/texlive-fix.nix;
 
@@ -37,6 +39,7 @@
           overlays = [
             fly-overlay
             local-pkgs-overlay
+            external-flakes-overlay
             # libfaketime-fix-overlay
             # texlive-fix-overlay
             inputs.community-emacs.overlay
