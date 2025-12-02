@@ -46,7 +46,8 @@ self: super:
   
   # Build ibosh using our nixpkgs (which allows unfree licenses)
   # instead of the instant-bosh flake's nixpkgs
-  ibosh = super.buildGoModule rec {
+  # Uses Go 1.25 and patches go.mod to accept 1.25.0 (upstream requires 1.25.1)
+  ibosh = (super.buildGoModule.override { go = super.go_1_25; }) rec {
     pname = "ibosh";
     version = "0.1.0";
 
@@ -57,20 +58,17 @@ self: super:
       sha256 = "sha256-VhHjuiVtEUU7eUL5snHAQ2gM+AFycfmEwefA+pOROB4=";
     };
 
-    vendorHash = null;
+    vendorHash = "sha256-joiuLlTgl156ZhLWICjfJhSYK3LRuWhOaTDn+1kMTck=";
+
+    # Patch go.mod to accept Go 1.25.0 instead of requiring 1.25.1
+    postPatch = ''
+      substituteInPlace go.mod \
+        --replace-fail "go 1.25.1" "go 1.25"
+    '';
 
     subPackages = [ "cmd/ibosh" ];
 
     ldflags = [ "-s" "-w" ];
-
-    nativeBuildInputs = [ super.installShellFiles ];
-
-    postInstall = ''
-      installShellCompletion --cmd ibosh \
-        --bash <($out/bin/ibosh --generate-bash-completion) \
-        --zsh <($out/bin/ibosh --generate-zsh-completion) \
-        --fish <($out/bin/ibosh --generate-fish-completion)
-    '';
 
     meta = with super.lib; {
       description = "instant-bosh CLI - Manage containerized BOSH directors";
