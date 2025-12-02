@@ -6,11 +6,11 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1761944159,
-        "narHash": "sha256-DjAyVaJNy5vaU7QayJ5mkjTvG/nZg+dyvQV3loQauMc=",
+        "lastModified": 1764446202,
+        "narHash": "sha256-vM6ma0RSJTaGEADtRNtgFx5KahGU+KVUkKvNvs+F+4I=",
         "ref": "refs/heads/main",
-        "rev": "43c3cbd7b80aa7e2c31360d7dfaf8b8ce3e023eb",
-        "revCount": 179,
+        "rev": "42a30b8e5d463b72828fca569729c0fed71ad473",
+        "revCount": 190,
         "type": "git",
         "url": "https://github.com/rkoster/bosh-oci-builder"
       },
@@ -190,6 +190,25 @@
         "type": "github"
       }
     },
+    "instant-bosh": {
+      "inputs": {
+        "flake-utils": "flake-utils_3",
+        "nixpkgs": "nixpkgs_4"
+      },
+      "locked": {
+        "lastModified": 1764692868,
+        "narHash": "sha256-VhHjuiVtEUU7eUL5snHAQ2gM+AFycfmEwefA+pOROB4=",
+        "owner": "rkoster",
+        "repo": "instant-bosh",
+        "rev": "d4758f800b88161ee59ccc0e97e4b9321706a07c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "rkoster",
+        "repo": "instant-bosh",
+        "type": "github"
+      }
+    },
     "nix-darwin": {
       "inputs": {
         "nixpkgs": [
@@ -302,6 +321,22 @@
     },
     "nixpkgs_5": {
       "locked": {
+        "lastModified": 1764517877,
+        "narHash": "sha256-pp3uT4hHijIC8JUK5MEqeAWmParJrgBVzHLNfJDZxg4=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "2d293cbfa5a793b4c50d17c05ef9e385b90edf6c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs_5": {
+      "locked": {
         "lastModified": 1756389309,
         "narHash": "sha256-BRf1kDx8zL4dvRs47HzgkTQwTaxhq1U1wS2Hi7/IFVM=",
         "owner": "NixOS",
@@ -324,6 +359,7 @@
         "flake-parts": "flake-parts",
         "ghostty": "ghostty",
         "home-manager": "home-manager",
+        "instant-bosh": "instant-bosh",
         "nix-darwin": "nix-darwin",
         "nixpkgs": "nixpkgs_5"
       }

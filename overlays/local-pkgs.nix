@@ -43,4 +43,5 @@ self: super:
   sheepctl = super.callPackage ../pkgs/sheepctl { };
   kinto = super.callPackage ../pkgs/kinto { };
   token-count = super.callPackage ../pkgs/token-count { };
+  ibosh = super.callPackage ../pkgs/ibosh { };
 }

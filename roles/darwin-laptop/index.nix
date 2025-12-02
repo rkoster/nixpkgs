@@ -86,6 +86,7 @@ in {
     # kiln
     credhub
     inputs.bosh-oci-builder.packages.${pkgs.system}.bob
+    ibosh
 
     pget
     imgpkg

@@ -93,6 +93,7 @@ in {
     bundix
     # kiln
     credhub
+    ibosh
 
     pget
     imgpkg

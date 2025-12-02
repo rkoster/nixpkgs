@@ -16,6 +16,7 @@
     ghostty.url = "github:ghostty-org/ghostty";
     bosh-oci-builder.url = "git+https://github.com/rkoster/bosh-oci-builder";
     deskrun.url = "github:rkoster/deskrun";
+    instant-bosh.url = "github:rkoster/instant-bosh";
   };
 
   outputs = inputs:
@@ -47,6 +48,7 @@
           config = {
             allowUnfree = true;
             allowUnsupportedSystem = true;
+            allowUnfreePredicate = pkg: true;
           };
         };
 
