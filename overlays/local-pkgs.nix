@@ -43,5 +43,41 @@ self: super:
   sheepctl = super.callPackage ../pkgs/sheepctl { };
   kinto = super.callPackage ../pkgs/kinto { };
   token-count = super.callPackage ../pkgs/token-count { };
-  ibosh = super.callPackage ../pkgs/ibosh { };
+  
+  # Build ibosh using our nixpkgs (which allows unfree licenses)
+  # instead of the instant-bosh flake's nixpkgs
+  ibosh = super.buildGoModule rec {
+    pname = "ibosh";
+    version = "0.1.0";
+
+    src = super.fetchFromGitHub {
+      owner = "rkoster";
+      repo = "instant-bosh";
+      rev = "d4758f800b88161ee59ccc0e97e4b9321706a07c";
+      sha256 = "sha256-VhHjuiVtEUU7eUL5snHAQ2gM+AFycfmEwefA+pOROB4=";
+    };
+
+    vendorHash = null;
+
+    subPackages = [ "cmd/ibosh" ];
+
+    ldflags = [ "-s" "-w" ];
+
+    nativeBuildInputs = [ super.installShellFiles ];
+
+    postInstall = ''
+      installShellCompletion --cmd ibosh \
+        --bash <($out/bin/ibosh --generate-bash-completion) \
+        --zsh <($out/bin/ibosh --generate-zsh-completion) \
+        --fish <($out/bin/ibosh --generate-fish-completion)
+    '';
+
+    meta = with super.lib; {
+      description = "instant-bosh CLI - Manage containerized BOSH directors";
+      homepage = "https://github.com/rkoster/instant-bosh";
+      license = licenses.bsl11;
+      maintainers = with maintainers; [ rkoster ];
+      mainProgram = "ibosh";
+    };
+  };
 }

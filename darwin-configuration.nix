@@ -19,8 +19,12 @@
     ];
     gc.automatic = true;
     extraOptions = ''
-      experimental-features = nix-command
+      experimental-features = nix-command flakes
+      accept-flake-config = true
     '';
+    settings = {
+      extra-experimental-features = "nix-command flakes";
+    };
   };
 
   security.pam.services.sudo_local.touchIdAuth = true;
