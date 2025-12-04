@@ -55,7 +55,7 @@ self: super:
       owner = "rkoster";
       repo = "instant-bosh";
       rev = "5895b0d439963bdf92082445c525d61e73eb35ae";
-      sha256 = "sha256-j0KkpwWCYFjMus85uu1rVMbJhoolQNahLAzndPAjQY=";
+      sha256 = "sha256-j0KkpwWCYFjMus85uu1rVMbJhoo21QNahLAzndPAjQY=";
     };
 
     vendorHash = "sha256-joiuLlTgl156ZhLWICjfJhSYK3LRuWhOaTDn+1kMTck=";

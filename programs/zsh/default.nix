@@ -7,13 +7,13 @@ let
   
   # Platform-specific nix-update command
   nixUpdateCommand = if isDarwin then ''
-    sudo nix run --extra-experimental-features flakes nix-darwin/master#darwin-rebuild -- switch --flake ~/.config/nixpkgs
-    source ~/.zshrc;
-    tmux source-file ~/.config/tmux/tmux.conf;
+    sudo nix run --extra-experimental-features flakes nix-darwin/master#darwin-rebuild -- switch --flake ~/.config/nixpkgs && \
+    source ~/.zshrc && \
+    if [ -n "$TMUX" ]; then tmux source-file ~/.config/tmux/tmux.conf; fi
   '' else ''
-    nix run --extra-experimental-features flakes home-manager/master#home-manager -- switch --flake ~/.config/home-manager
-    source ~/.zshrc;
-    tmux source-file ~/.config/tmux/tmux.conf;
+    nix run --extra-experimental-features flakes home-manager/master#home-manager -- switch --flake ~/.config/home-manager && \
+    source ~/.zshrc && \
+    if [ -n "$TMUX" ]; then tmux source-file ~/.config/tmux/tmux.conf; fi
   '';
 in
 
