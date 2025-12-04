@@ -54,8 +54,8 @@ self: super:
     src = super.fetchFromGitHub {
       owner = "rkoster";
       repo = "instant-bosh";
-      rev = "d4758f800b88161ee59ccc0e97e4b9321706a07c";
-      sha256 = "sha256-VhHjuiVtEUU7eUL5snHAQ2gM+AFycfmEwefA+pOROB4=";
+      rev = "5895b0d439963bdf92082445c525d61e73eb35ae";
+      sha256 = "sha256-j0KkpwWCYFjMus85uu1rVMbJhoo1QNahLAzndPAjQY=";
     };
 
     vendorHash = "sha256-joiuLlTgl156ZhLWICjfJhSYK3LRuWhOaTDn+1kMTck=";
