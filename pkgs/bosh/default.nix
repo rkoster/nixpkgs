@@ -1,6 +1,6 @@
-{ buildGo123Module, fetchFromGitHub, installShellFiles, stdenv, lib, writeText }:
+{ buildGo124Module, fetchFromGitHub, installShellFiles, stdenv, lib, writeText }:
 
-buildGo123Module rec {
+buildGo124Module rec {
   pname = "bosh";
   version = "7.9.14";
 
