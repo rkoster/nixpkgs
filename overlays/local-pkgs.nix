@@ -49,16 +49,16 @@ self: super:
   # Uses Go 1.25 and patches go.mod to accept 1.25.0 (upstream requires 1.25.1)
   ibosh = (super.buildGoModule.override { go = super.go_1_25; }) rec {
     pname = "ibosh";
-    version = "0.1.0";
+    version = "0.2.0";
 
     src = super.fetchFromGitHub {
       owner = "rkoster";
       repo = "instant-bosh";
-      rev = "5895b0d439963bdf92082445c525d61e73eb35ae";
-      sha256 = "sha256-j0KkpwWCYFjMus85uu1rVMbJhoo21QNahLAzndPAjQY=";
+      rev = "56d3f34a0e79c8942ffee43afd559a2407e5d53d";
+      sha256 = "sha256-sBh/3Yzcj+AoRKbO3sKnqwP0PTkuvwaOSumEJ+JD86I=";
     };
 
-    vendorHash = "sha256-joiuLlTgl156ZhLWICjfJhSYK3LRuWhOaTDn+1kMTck=";
+    vendorHash = "sha256-qj5MBQySJ6dSMcwP90iThNfEK5OxOGbq+e9Mofe6M5A=";
 
     # Patch go.mod to accept Go 1.25.0 instead of requiring 1.25.1
     postPatch = ''
@@ -68,7 +68,12 @@ self: super:
 
     subPackages = [ "cmd/ibosh" ];
 
-    ldflags = [ "-s" "-w" ];
+    ldflags = [
+      "-s"
+      "-w"
+      "-X main.version=${version}"
+      "-X main.commit=${src.rev}"
+    ];
 
     meta = with super.lib; {
       description = "instant-bosh CLI - Manage containerized BOSH directors";
