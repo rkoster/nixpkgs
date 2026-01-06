@@ -35,7 +35,7 @@ in {
     wget
     nmap
     arp-scan
-    aria
+    aria2
     git-duet
     comma
     # jless

@@ -37,15 +37,15 @@
 
   programs.git = {
     enable = true;
-    userName = "rkoster";
-    userEmail = "hi@rkoster.dev";
-    extraConfig = {
+    settings = {
+      user = {
+        name = "rkoster";
+        email = "hi@rkoster.dev";
+        signingkey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFq2Q5tJbPHP1ignMYswvcqt16RVTiznVB6JFaz87fhc";
+      };
       pull = { rebase = true; };
       init = { defaultBranch = "main"; };
       push = { autoSetupRemote = true; };
-      user = {
-        signingkey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFq2Q5tJbPHP1ignMYswvcqt16RVTiznVB6JFaz87fhc";
-      };
       gpg = { format = "ssh"; };
       "gpg \"ssh\"" = {
         program = "${pkgs.lib.getExe' pkgs._1password-gui "op-ssh-sign"}";

@@ -1,6 +1,6 @@
-{ buildGoModule, go, fetchFromGitHub, lib }:
+{ buildGoModule, go_1_25, fetchFromGitHub, lib }:
 
-(buildGoModule.override { go = go; }) rec {
+(buildGoModule.override { go = go_1_25; }) rec {
   pname = "flasher-tool";
   version = "2643981a4a1f4f425ea4f331f66bdb9da6abf843";
 
