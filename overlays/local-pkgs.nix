@@ -43,6 +43,7 @@ self: super:
   sheepctl = super.callPackage ../pkgs/sheepctl { };
   kinto = super.callPackage ../pkgs/kinto { };
   token-count = super.callPackage ../pkgs/token-count { };
+  flasher-tool = super.callPackage ../pkgs/flasher-tool { };
   
   # Build ibosh using our nixpkgs (which allows unfree licenses)
   # instead of the instant-bosh flake's nixpkgs

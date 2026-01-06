@@ -111,6 +111,9 @@ in {
     
     # GitHub Actions local runner
     deskrun
+    
+    # Incus OS tools
+    flasher-tool
   ];
 
   programs.direnv = {
