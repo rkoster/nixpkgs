@@ -13,7 +13,7 @@
 
   sourceRoot = "${src.name}/incus-osd";
 
-  vendorHash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+  vendorHash = "sha256-xRVWLXmWS9L/nyLaLaJW7rX6KkaqeBWjsaqSNH3Hi5Q=";
 
   subPackages = [ "cmd/flasher-tool" ];
 

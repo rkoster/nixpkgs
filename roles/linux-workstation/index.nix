@@ -113,7 +113,8 @@ in {
     # deskrun  # TODO: Fix vendor hash issue after flake update
     
     # Incus OS tools
-    # flasher-tool  # TODO: Fix vendor hash after Go version update
+    flasher-tool
+    incus
   ];
 
   programs.direnv = {
