@@ -34,7 +34,7 @@ in {
     git-duet
     comma
     # jless
-    openapi-tui
+    # openapi-tui  # Removed: build fails with cc-rs/onig_sys compilation error
     packer
     colima
     docker
