@@ -1,6 +1,6 @@
-{ buildGo123Module, fetchFromGitHub, stdenv, lib, writeText, pkgs }:
+{ buildGoModule, fetchFromGitHub, stdenv, lib, writeText, pkgs }:
 
-buildGo123Module rec {
+buildGoModule rec {
   pname = "vulnsvc";
   version = "v1.0.0-alpha.11";
 

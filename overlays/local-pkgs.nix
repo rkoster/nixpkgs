@@ -29,7 +29,7 @@ self: super:
   osspi-cli = super.callPackage ../pkgs/osspi-cli { };
   tanzu = super.callPackage ../pkgs/tanzu { };
   h2o = super.callPackage ../pkgs/h2o { };
-  shepherd = super.callPackage ../pkgs/shepherd { };
+  # shepherd = super.callPackage ../pkgs/shepherd { }; # Removed - uses internal Broadcom GitLab
   kiln = super.callPackage ../pkgs/kiln { };
   gosub = super.callPackage ../pkgs/gosub { };
   imgpkg = super.callPackage ../pkgs/imgpkg { };
@@ -37,10 +37,10 @@ self: super:
   pivnet = super.callPackage ../pkgs/pivnet { };
   ctr = super.callPackage ../pkgs/ctr { };
   slackdump = super.callPackage ../pkgs/slackdump { };
-  vulnsvc = super.callPackage ../pkgs/vulnsvc { };
+  # vulnsvc = super.callPackage ../pkgs/vulnsvc { }; # Removed - uses internal Broadcom GitLab
   tanzu-sm-installer = super.callPackage ../pkgs/tanzu-sm-installer { };
   cloud-provider-kind = super.callPackage ../pkgs/cloud-provider-kind { };
-  sheepctl = super.callPackage ../pkgs/sheepctl { };
+  # sheepctl = super.callPackage ../pkgs/sheepctl { }; # Removed - uses internal Broadcom GitLab
   kinto = super.callPackage ../pkgs/kinto { };
   token-count = super.callPackage ../pkgs/token-count { };
   flasher-tool = super.callPackage ../pkgs/flasher-tool { };

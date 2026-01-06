@@ -13,7 +13,7 @@
 
   sourceRoot = "${src.name}/incus-osd";
 
-  vendorHash = null;  # Let Nix recalculate the vendor hash
+  vendorHash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
 
   subPackages = [ "cmd/flasher-tool" ];
 

@@ -2,7 +2,7 @@ self: super:
 
 let
   fly = (versionArg: sha256Arg: vendorHashArg: (
-    super.buildGo123Module rec {
+    super.buildGoModule rec {
       pname = "fly";
       version = versionArg;
 

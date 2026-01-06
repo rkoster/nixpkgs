@@ -110,10 +110,10 @@ in {
     firecracker
     
     # GitHub Actions local runner
-    deskrun
+    # deskrun  # TODO: Fix vendor hash issue after flake update
     
     # Incus OS tools
-    flasher-tool
+    # flasher-tool  # TODO: Fix vendor hash after Go version update
   ];
 
   programs.direnv = {

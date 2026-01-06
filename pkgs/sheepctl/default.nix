@@ -1,6 +1,6 @@
-{ buildGo123Module, fetchFromGitHub, stdenv, lib, writeText }:
+{ buildGoModule, fetchFromGitHub, stdenv, lib, writeText }:
 
-buildGo123Module rec {
+buildGoModule rec {
   pname = "sheepctl";
   version = "0.26.7";
 
