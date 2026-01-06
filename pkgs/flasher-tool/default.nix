@@ -1,6 +1,6 @@
-{ buildGoModule, go_1_24, fetchFromGitHub, lib }:
+{ buildGoModule, go, fetchFromGitHub, lib }:
 
-(buildGoModule.override { go = go_1_24; }) rec {
+(buildGoModule.override { go = go; }) rec {
   pname = "flasher-tool";
   version = "2643981a4a1f4f425ea4f331f66bdb9da6abf843";
 
@@ -13,7 +13,7 @@
 
   sourceRoot = "${src.name}/incus-osd";
 
-  vendorHash = "sha256-xRVWLXmWS9L/nyLaLaJW7rX6KkaqeBWjsaqSNH3Hi5Q=";
+  vendorHash = null;  # Let Nix recalculate the vendor hash
 
   subPackages = [ "cmd/flasher-tool" ];
 
