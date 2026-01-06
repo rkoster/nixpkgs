@@ -75,6 +75,26 @@
              ];
              specialArgs = { pkgs = darwinPkgs; inherit inputs; system = darwinSystem; username = darwinUsername; };
            };
+
+           # Add this new configuration for work laptop
+           "Kosters-MacBook-Pro" = inputs.nix-darwin.lib.darwinSystem {
+             system = darwinSystem;
+             modules = [
+               ./darwin-configuration.nix
+               inputs.home-manager.darwinModules. home-manager {
+                 home-manager = {
+                   useUserPackages = false;
+                   useGlobalPkgs = true;
+                   users = builtins.listToAttrs [{
+                     name = darwinUsername;
+                     value  = import ./roles/darwin-work-laptop/index.nix;
+                   }];
+                   extraSpecialArgs = { inherit inputs; username = darwinUsername; };
+                 };
+               }
+             ];
+             specialArgs = { pkgs = darwinPkgs; inherit inputs; system = darwinSystem; username = darwinUsername; };
+           };
          };
 
          homeConfigurations = {
