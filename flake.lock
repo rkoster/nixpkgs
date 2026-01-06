@@ -46,11 +46,11 @@
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
-        "lastModified": 1764063222,
-        "narHash": "sha256-gxM31vRMcvWhUuz1R848rIQ7Eov8rFAiujAUXiLrmYQ=",
+        "lastModified": 1767562889,
+        "narHash": "sha256-4MMoDBn/fIBuqWnQQ0IaEp2pcjLuFY0/6euBkGSgr7I=",
         "owner": "rkoster",
         "repo": "deskrun",
-        "rev": "8102aec570f89af67093292e4e1f15879ca1c4f0",
+        "rev": "f587467f3ce1f61225985bce8ae32228775e65fb",
         "type": "github"
       },
       "original": {
