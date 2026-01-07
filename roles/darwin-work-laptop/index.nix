@@ -9,6 +9,7 @@ in {
   imports = [
     ../../programs/zsh/sources.nix
     ../../programs/emacs/sources.nix
+    ../../modules/zscaler-home.nix
   ];
 
   home.language = {
@@ -69,7 +70,7 @@ in {
     spruce
     bundix
     credhub
-    inputs.bosh-oci-builder.packages.${pkgs.system}.bob
+    # inputs.bosh-oci-builder.packages.${pkgs.system}.bob
     ibosh
 
     pget
@@ -90,7 +91,7 @@ in {
       
       # Git SSL configuration for corporate environment
       http = {
-        sslCAInfo = "/etc/ssl/nix-certs. pem";
+        sslCAInfo = "/etc/ssl/nix-certs.pem";
         sslBackend = "openssl";
       };
       
@@ -126,6 +127,11 @@ in {
       Host *
         IdentityAgent "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
     '';
+  };
+
+  zscaler = {
+    enable = true;
+    certFile = "/etc/ssl/nix-certs.pem";
   };
 
   programs.fzf = {

@@ -94,6 +94,12 @@
                    extraSpecialArgs = { inherit inputs; username = darwinWorkUsername; };
                  };
                }
+               ({ ... }: {
+                 zscaler = {
+                   enable = true;
+                   trustedUsers = [ "root" darwinWorkUsername ];
+                 };
+               })
              ];
              specialArgs = { pkgs = darwinPkgs; inherit inputs; system = darwinWorkSystem; username = darwinWorkUsername; };
            };
