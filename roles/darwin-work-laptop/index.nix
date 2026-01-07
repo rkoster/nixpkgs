@@ -39,6 +39,7 @@ in {
     gh
     devbox
     gnutar
+    gnupg
     retry
     dive
 
@@ -55,7 +56,7 @@ in {
     gopls # go
     yaml-language-server # yaml
     solargraph # ruby
-    nodePackages. bash-language-server # bash
+    nodePackages.bash-language-server # bash
 
     opencode
 
@@ -88,13 +89,13 @@ in {
       pull = { rebase = true; };
       init = { defaultBranch = "main"; };
       push = { autoSetupRemote = true; };
-      
+
       # Git SSL configuration for corporate environment
       http = {
         sslCAInfo = "/etc/ssl/nix-certs.pem";
         sslBackend = "openssl";
       };
-      
+
       user = {
         signingkey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFq2Q5tJbPHP1ignMYswvcqt16RVTiznVB6JFaz87fhc";
       };
@@ -111,21 +112,55 @@ in {
       ".aider*"
     ];
     lfs.enable = true;
+
+    # Global Git configuration
+    extraConfig = {
+      # Rewrite HTTPS GitHub URLs to SSH
+      url."ssh://git@github.com/".insteadOf = "https://github.com/";
+      # Rewrite HTTPS GitLab URLs to SSH
+      url."ssh://git@gitlab.com/".insteadOf = "https://gitlab.com/";
+      # Add more mappings as needed
+    };
+
   };
 
-  programs. direnv = {
+  services.gpg-agent = {
+    enable = true;
+
+    # Cache TTL settings
+    defaultCacheTtl = 60;
+    defaultCacheTtlSsh = 60;
+    maxCacheTtl = 600;
+    maxCacheTtlSsh = 60;
+
+    # Enable SSH support
+    enableSshSupport = true;
+
+    # Additional options
+    extraConfig = ''
+      ignore-cache-for-signing
+      no-allow-external-cache
+      debug-level advanced
+      log-file /var/log/gpg-agent.log
+    '';
+
+    # Pinentry program using Nix package path
+    pinentryPackage = pkgs.pinentry_mac;
+  };
+
+  programs.direnv = {
     enable = true;
     enableZshIntegration = true;
     nix-direnv.enable = true;
   };
 
-  programs. ssh = {
+  programs.ssh = {
     enable = true;
     compression = true;
     forwardAgent = false;
     extraConfig = ''
       Host *
-        IdentityAgent "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
+        IdentityAgent ~/.gnupg/S.gpg-agent.ssh
     '';
   };
 
@@ -151,5 +186,5 @@ in {
   programs.tmux = import ../../programs/tmux/default.nix { inherit pkgs; };
   programs.ghostty = import ../../programs/ghostty/default.nix { inherit homeDir pkgs; };
 
-  home. stateVersion = "24.05";
+  home.stateVersion = "24.05";
 }
