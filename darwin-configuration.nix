@@ -28,6 +28,10 @@
     '';
     settings = {
       extra-experimental-features = "nix-command flakes";
+      system = system;
+      extra-platforms = if system == "aarch64-darwin" 
+        then [ "x86_64-darwin" "aarch64-darwin" ]
+        else [ "x86_64-darwin" ];
     };
   };
 
