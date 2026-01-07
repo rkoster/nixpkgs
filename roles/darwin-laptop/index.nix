@@ -30,7 +30,7 @@ in {
     wget
     nmap
     arp-scan
-    aria
+    aria2
     git-duet
     comma
     # jless
@@ -85,8 +85,9 @@ in {
     bundix
     # kiln
     credhub
-    inputs.bosh-oci-builder.packages.${pkgs.system}.bob
+    # inputs.bosh-oci-builder.packages.${pkgs.system}.bob
     ibosh
+    incus-client
 
     pget
     imgpkg

@@ -45,6 +45,11 @@ self: super:
   token-count = super.callPackage ../pkgs/token-count { };
   flasher-tool = super.callPackage ../pkgs/flasher-tool { };
   
+  # Incus client only (no server components, works on Darwin)
+  incus-client = import ../pkgs/incus-client { 
+    inherit (super) lib buildGoModule fetchFromGitHub installShellFiles;
+  };
+  
   # Build ibosh using our nixpkgs (which allows unfree licenses)
   # instead of the instant-bosh flake's nixpkgs
   # Uses Go 1.25 and patches go.mod to accept 1.25.0 (upstream requires 1.25.1)
