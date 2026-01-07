@@ -144,5 +144,12 @@ in {
     enableZshIntegration = true;
   };
 
+  programs.starship = import ../../programs/starship/default.nix;
+  programs.broot = import ../../programs/broot/default.nix;
+  programs.zsh = import ../../programs/zsh/default.nix { inherit config pkgs; };
+  programs.emacs = import ../../programs/emacs/default.nix { inherit pkgs; };
+  programs.tmux = import ../../programs/tmux/default.nix { inherit pkgs; };
+  programs.ghostty = import ../../programs/ghostty/default.nix { inherit homeDir pkgs; };
+
   home. stateVersion = "24.05";
 }
