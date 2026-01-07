@@ -56,6 +56,7 @@
         };
 
         darwinPkgs = mkOverlayedPkgs darwinSystem;
+        darwinWorkPkgs = mkOverlayedPkgs darwinWorkSystem;
         linuxPkgs = mkOverlayedPkgs linuxSystem;
        in {
          darwinConfigurations = {
@@ -101,7 +102,7 @@
                  };
                })
              ];
-             specialArgs = { pkgs = darwinPkgs; inherit inputs; system = darwinWorkSystem; username = darwinWorkUsername; };
+              specialArgs = { pkgs = darwinWorkPkgs; inherit inputs; system = darwinWorkSystem; username = darwinWorkUsername; };
            };
          };
 

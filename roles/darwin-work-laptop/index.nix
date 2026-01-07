@@ -32,6 +32,7 @@ in {
     comma
     openapi-tui
     packer
+    lima
     colima
     docker
     kubectl
