@@ -27,6 +27,8 @@
       flake = let
         darwinUsername = "rubenkoster";
         darwinSystem = "x86_64-darwin";
+        darwinWorkUsername = "Ruben.Koster";
+        darwinWorkSystem = "aarch64-darwin";
         linuxUsername = "ruben";
         linuxSystem = "x86_64-linux";
 
@@ -78,7 +80,7 @@
 
            # Add this new configuration for work laptop
            "Kosters-MacBook-Pro" = inputs.nix-darwin.lib.darwinSystem {
-             system = darwinSystem;
+             system = darwinWorkSystem;
              modules = [
                ./darwin-configuration.nix
                inputs.home-manager.darwinModules. home-manager {
@@ -86,14 +88,14 @@
                    useUserPackages = false;
                    useGlobalPkgs = true;
                    users = builtins.listToAttrs [{
-                     name = darwinUsername;
+                     name = darwinWorkUsername;
                      value  = import ./roles/darwin-work-laptop/index.nix;
                    }];
-                   extraSpecialArgs = { inherit inputs; username = darwinUsername; };
+                   extraSpecialArgs = { inherit inputs; username = darwinWorkUsername; };
                  };
                }
              ];
-             specialArgs = { pkgs = darwinPkgs; inherit inputs; system = darwinSystem; username = darwinUsername; };
+             specialArgs = { pkgs = darwinPkgs; inherit inputs; system = darwinWorkSystem; username = darwinWorkUsername; };
            };
          };
 

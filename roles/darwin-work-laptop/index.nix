@@ -28,7 +28,6 @@ in {
     wget
     nmap
     arp-scan
-    aria
     comma
     openapi-tui
     packer
@@ -62,12 +61,9 @@ in {
     google-cloud-sdk
 
     kind
-    cloud-provider-kind
 
     dyff
     bosh
-    om
-    bosh-bootloader
     ytt
     cf
     spruce
