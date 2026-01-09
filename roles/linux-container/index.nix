@@ -37,29 +37,6 @@ in {
     enableZshIntegration = true;
   };
 
-  home.file.".local/bin/configure-docker" = {
-    source = ../../scripts/configure-docker.sh;
-    executable = true;
-  };
-
-  home.file.".local/bin/configure-rootless-containers" = {
-    source = ../../scripts/configure-rootless-containers.sh;
-    executable = true;
-  };
-
-  home.file.".local/bin/verify-rootless-setup" = {
-    source = ../../scripts/verify-rootless-setup.sh;
-    executable = true;
-  };
-
-  home.file.".local/share/doc/rootless-containers.md" = {
-    source = ../../docs/rootless-containers.md;
-  };
-
-  programs.noti = {
-    enable = true;
-  };
-
   programs.starship = import ../../programs/starship/default.nix;
   programs.broot = import ../../programs/broot/default.nix;
   programs.zsh = import ../../programs/zsh/default.nix { inherit config pkgs; };

@@ -39,7 +39,7 @@ jobs:
         run: nix profile install nixpkgs#devenv
 
       - name: Build container image
-        run: devenv container build shell
+        run: devenv container build workspace
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
@@ -49,13 +49,10 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push container to GHCR
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           devenv container \
             --registry docker://${{ env.REGISTRY }}/${{ github.repository_owner }}/ \
-            --copy-args="--dest-creds x:${GITHUB_TOKEN}" \
-            copy shell
+            copy workspace
 
       - name: Output image details
         run: |

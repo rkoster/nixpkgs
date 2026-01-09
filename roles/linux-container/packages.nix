@@ -21,7 +21,6 @@ with pkgs; [
   retry
   coreutils
   gcc
-  lastpass-cli
 
   # Container tools
   docker
@@ -34,7 +33,6 @@ with pkgs; [
   kubectl
   kind
   k9s
-  cloud-provider-kind
 
   # Cloud/CI tools
   gh
@@ -52,59 +50,7 @@ with pkgs; [
   solargraph
   nodePackages.bash-language-server
 
-  # AI tools
-  opencode
-  token-count
-
-  # JRE for Synopsys Detect
-  jre_minimal
-
-  # BOSH ecosystem (custom packages from overlays)
-  bosh
-  om
-  bosh-bootloader
-  ytt
-  cf
-  bundix
-  credhub
-  ibosh
-
-  # Carvel tools
-  pget
-  imgpkg
-  vendir
-  kbld
-
-  # Additional custom packages from overlays/local-pkgs.nix
-  ssoca
-  leftovers
-  spruce
-  safe
-  genesis
-  gojson
-  runctl
-  smith
-  hub-tool
-  uaa-cli
+  # Custom packages from overlays/local-pkgs.nix
   dyff
-  peribolos
   jless
-  pinniped
-  nsc
-  csb
-  srpcli
-  osstp-load
-  osspi-signer
-  osspi-cli
-  tanzu
-  h2o
-  kiln
-  gosub
-  pivnet
-  ctr
-  slackdump
-  tanzu-sm-installer
-  firecracker
-  flasher-tool
-  incus-client
 ]
