@@ -1,0 +1,74 @@
+name: Publish Container Image
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'roles/linux-container/**'
+      - 'programs/**'
+      - 'pkgs/**'
+      - 'overlays/**'
+      - 'devenv.nix'
+      - 'devenv.yaml'
+      - '.github/workflows/container-publish.yml'
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/workspace
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v27
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Install devenv
+        run: nix profile install nixpkgs#devenv
+
+      - name: Build container image
+        run: devenv container build workspace
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push container to GHCR
+        run: |
+          devenv container \
+            --registry docker://${{ env.REGISTRY }}/${{ github.repository_owner }}/ \
+            copy workspace
+
+      - name: Output image details
+        run: |
+          echo "## Container Published ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Image**: \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Usage" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "# Using Incus" >> $GITHUB_STEP_SUMMARY
+          echo "incus launch ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest my-workspace" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "# Using Docker/Podman" >> $GITHUB_STEP_SUMMARY
+          echo "docker run -it ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "# Inspect with skopeo" >> $GITHUB_STEP_SUMMARY
+          echo "skopeo inspect docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
