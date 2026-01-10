@@ -71,12 +71,22 @@ jobs:
             echo "is_pr=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Push container to GHCR
+      - name: Push container to GHCR with appropriate tag
         run: |
-          devenv container \
-            --registry docker://${{ env.REGISTRY }}/${{ github.repository_owner }}/ \
-            --tag ${{ steps.tag.outputs.tag }} \
-            copy workspace
+          TAG="${{ steps.tag.outputs.tag }}"
+          # devenv container copy pushes to registry with the container name as tag
+          # We'll use devenv to push, then use skopeo to create an additional tag if needed
+          devenv container --registry docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} copy workspace
+          
+          # The container is pushed as workspace:workspace by devenv
+          # Retag it to our desired tag name
+          if [ "$TAG" != "workspace" ]; then
+            skopeo copy \
+              --src-creds=${{ github.actor }}:${{ secrets.GITHUB_TOKEN }} \
+              --dest-creds=${{ github.actor }}:${{ secrets.GITHUB_TOKEN }} \
+              docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:workspace \
+              docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$TAG
+          fi
 
       - name: Output image details
         run: |
