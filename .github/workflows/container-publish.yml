@@ -45,7 +45,7 @@ jobs:
             experimental-features = nix-command flakes
 
       - name: Install devenv
-        run: nix profile install nixpkgs#devenv
+        run: nix profile install nixpkgs#devenv nixpkgs#skopeo
 
       - name: Build container image
         run: devenv container build workspace
@@ -73,10 +73,19 @@ jobs:
 
       - name: Push container to GHCR
         run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          
+          # Push with devenv (uses container name 'workspace' as tag)
           devenv container \
-            --registry docker://${{ env.REGISTRY }}/${{ github.repository_owner }}/ \
-            --tag ${{ steps.tag.outputs.tag }} \
+            --registry docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} \
             copy workspace
+          
+          # If we need a different tag, use skopeo to retag
+          if [ "$TAG" != "workspace" ]; then
+            skopeo copy \
+              docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:workspace \
+              docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$TAG
+          fi
 
       - name: Output image details
         run: |
