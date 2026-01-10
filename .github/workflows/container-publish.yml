@@ -11,6 +11,15 @@ on:
       - 'devenv.nix'
       - 'devenv.yaml'
       - '.github/workflows/container-publish.yml'
+  pull_request:
+    paths:
+      - 'roles/linux-container/**'
+      - 'programs/**'
+      - 'pkgs/**'
+      - 'overlays/**'
+      - 'devenv.nix'
+      - 'devenv.yaml'
+      - '.github/workflows/container-publish.yml'
   workflow_dispatch:
 
 env:
@@ -48,27 +57,51 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Determine container tag
+        id: tag
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            # For PRs, use the branch name as tag
+            TAG=$(echo "${{ github.head_ref }}" | sed 's/[^a-zA-Z0-9._-]/-/g')
+            echo "tag=$TAG" >> $GITHUB_OUTPUT
+            echo "is_pr=true" >> $GITHUB_OUTPUT
+          else
+            # For master pushes, use 'latest' tag
+            echo "tag=latest" >> $GITHUB_OUTPUT
+            echo "is_pr=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Push container to GHCR
         run: |
           devenv container \
             --registry docker://${{ env.REGISTRY }}/${{ github.repository_owner }}/ \
+            --tag ${{ steps.tag.outputs.tag }} \
             copy workspace
 
       - name: Output image details
         run: |
+          IMAGE_TAG="${{ steps.tag.outputs.tag }}"
+          IMAGE_FULL="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG}"
+          
           echo "## Container Published ✅" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Image**: \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Image**: \`${IMAGE_FULL}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "${{ steps.tag.outputs.is_pr }}" == "true" ]]; then
+            echo "> ℹ️ This is a PR build. The image is tagged with the branch name and will not update the \`latest\` tag." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+          
           echo "### Usage" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
           echo "# Using Incus" >> $GITHUB_STEP_SUMMARY
-          echo "incus launch ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest my-workspace" >> $GITHUB_STEP_SUMMARY
+          echo "incus launch ${IMAGE_FULL} my-workspace" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "# Using Docker/Podman" >> $GITHUB_STEP_SUMMARY
-          echo "docker run -it ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
+          echo "docker run -it ${IMAGE_FULL}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "# Inspect with skopeo" >> $GITHUB_STEP_SUMMARY
-          echo "skopeo inspect docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
+          echo "skopeo inspect docker://${IMAGE_FULL}" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
