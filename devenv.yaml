@@ -2,5 +2,4 @@ inputs:
   nixpkgs:
     url: github:NixOS/nixpkgs/nixpkgs-unstable
   nix2container:
-    url: github:nlewo/nix2container
     follows: nixpkgs
