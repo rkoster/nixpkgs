@@ -9,7 +9,7 @@ rustPlatform.buildRustPackage rec {
     sha256 = "sha256-StuyYZhE+Fws0owjUGbFZqW7iQs/4BVtfVxHftylupE=";
   };
 
-  cargoHash = "sha256-PbX61RVbrI2kTuyXK+LhQdJDvNo3KjIQH5eBbL6iUBM=";
+  cargoHash = "sha256-TrTtUdS4YrIizTURrT9zIfaH676j1gKcbldI+RcSPFk=";
 
   meta = with lib; {
     description = "A command-line pager for JSON data.";

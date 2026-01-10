@@ -2,4 +2,6 @@ inputs:
   nixpkgs:
     url: github:NixOS/nixpkgs/nixpkgs-unstable
   nix2container:
-    follows: nixpkgs
+    url: github:nlewo/nix2container
+  mk-shell-bin:
+    url: github:rrbutani/nix-mk-shell-bin
