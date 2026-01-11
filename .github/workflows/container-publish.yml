@@ -8,8 +8,8 @@ on:
       - 'programs/**'
       - 'pkgs/**'
       - 'overlays/**'
-      - 'devenv.nix'
-      - 'devenv.yaml'
+      - 'flake.nix'
+      - 'flake.lock'
       - '.github/workflows/container-publish.yml'
   pull_request:
     paths:
@@ -17,8 +17,8 @@ on:
       - 'programs/**'
       - 'pkgs/**'
       - 'overlays/**'
-      - 'devenv.nix'
-      - 'devenv.yaml'
+      - 'flake.nix'
+      - 'flake.lock'
       - '.github/workflows/container-publish.yml'
   workflow_dispatch:
 
@@ -44,9 +44,6 @@ jobs:
           extra_nix_config: |
             experimental-features = nix-command flakes
 
-      - name: Install devenv
-        run: nix profile install nixpkgs#devenv nixpkgs#skopeo
-
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -71,49 +68,26 @@ jobs:
       - name: Build and push container to GHCR
         run: |
           TAG="${{ steps.tag.outputs.tag }}"
-          IS_PR="${{ steps.tag.outputs.is_pr }}"
           DEST="docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$TAG"
           
-          # Build the container image
-          echo "Building workspace container..."
-          IMAGE_JSON=$(devenv container build workspace | grep -o '/nix/store/.*-image-workspace\.json')
-          echo "Built image: $IMAGE_JSON"
+          echo "Building workspace container image..."
+          nix build .#workspace-image.copyToRegistry --print-build-logs
           
-          # The image JSON has a copyToRegistry script in the same directory
-          COPY_SCRIPT="$(dirname $IMAGE_JSON)/copyToRegistry"
-          
-          if [[ -x "$COPY_SCRIPT" ]]; then
-            # Use nix2container's copyToRegistry script for direct push to specific tag
-            echo "Pushing to $DEST using copyToRegistry..."
-            $COPY_SCRIPT $DEST
-          else
-            # Fallback: use devenv container copy (pushes to :latest)
-            echo "copyToRegistry not found, using devenv container copy..."
-            devenv container \
-              --registry "docker://${{ env.REGISTRY }}/${{ github.repository_owner }}/" \
-              copy workspace
-            
-            # Retag if not pushing to latest
-            if [[ "$TAG" != "latest" ]]; then
-              echo "Retagging from :latest to :$TAG..."
-              skopeo copy \
-                "docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" \
-                "$DEST"
-            fi
-          fi
+          echo "Pushing to $DEST..."
+          ./result "$DEST"
 
       - name: Output image details
         run: |
           IMAGE_TAG="${{ steps.tag.outputs.tag }}"
           IMAGE_FULL="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG}"
           
-          echo "## Container Published ✅" >> $GITHUB_STEP_SUMMARY
+          echo "## Container Published" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Image**: \`${IMAGE_FULL}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
           if [[ "${{ steps.tag.outputs.is_pr }}" == "true" ]]; then
-            echo "> ℹ️ This is a PR build. The image is tagged with the branch name and will not update the \`latest\` tag." >> $GITHUB_STEP_SUMMARY
+            echo "> This is a PR build. The image is tagged with the branch name and will not update the \`latest\` tag." >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
           fi
           
@@ -121,7 +95,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
           echo "# Using Incus" >> $GITHUB_STEP_SUMMARY
-          echo "incus launch ${IMAGE_FULL} my-workspace" >> $GITHUB_STEP_SUMMARY
+          echo "incus launch oci-ghcr:rkoster/workspace:${IMAGE_TAG} my-workspace --network incusbr0" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "# Using Docker/Podman" >> $GITHUB_STEP_SUMMARY
           echo "docker run -it ${IMAGE_FULL}" >> $GITHUB_STEP_SUMMARY

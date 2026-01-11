@@ -3,5 +3,3 @@
 *.#*
 .aider*
 result
-.devenv/
-.devenv.flake.nix

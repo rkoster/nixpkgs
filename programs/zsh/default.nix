@@ -94,8 +94,11 @@ in
     #     | xargs -L1 shepherd delete lease --namespace official
     # '';
     nix-update = nixUpdateCommand;
-    nix-flake-update =''
+    nix-flake-update = ''
       nix --extra-experimental-features flakes flake update --flake ~/.config/nixpkgs/
-      '';
+    '';
+    incus-ws-start = ''
+      incus start workspace 2>/dev/null || incus launch oci-ghcr:rkoster/workspace:latest workspace --network incusbr0
+    '';
   };
 }
