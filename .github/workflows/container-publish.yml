@@ -72,12 +72,24 @@ jobs:
         run: |
           TAG="${{ steps.tag.outputs.tag }}"
           
-          # Build outputs a JSON file with the image
-          IMAGE_JSON=$(devenv container build workspace | grep /nix/store | grep image-workspace.json)
+          # Build the container image
+          echo "Building workspace container..."
+          devenv container build workspace
           
-          # Use skopeo to push directly with the desired tag
+          # The build creates a tarball that we can load and push
+          # Find the container tarball in the nix store
+          IMAGE_TARBALL=$(nix-store -qR $(devenv container build workspace) | grep '\.tar\.gz$' || true)
+          
+          if [ -z "$IMAGE_TARBALL" ]; then
+            echo "Error: Could not find container tarball"
+            exit 1
+          fi
+          
+          echo "Found container tarball: $IMAGE_TARBALL"
+          
+          # Use skopeo to push directly from the tarball
           skopeo copy \
-            "nix:$IMAGE_JSON" \
+            "docker-archive:$IMAGE_TARBALL" \
             "docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$TAG"
 
       - name: Output image details
