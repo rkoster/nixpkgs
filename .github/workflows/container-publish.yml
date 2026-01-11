@@ -75,9 +75,10 @@ jobs:
         run: |
           TAG="${{ steps.tag.outputs.tag }}"
           
-          # Push with devenv (uses container name 'workspace' as tag)
+          # Push with devenv (container name becomes the image name)
+          # --registry should be registry/owner, not registry/owner/image
           devenv container \
-            --registry docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} \
+            --registry docker://${{ env.REGISTRY }}/${{ github.repository_owner }} \
             copy workspace
           
           # If we need a different tag, use skopeo to retag
