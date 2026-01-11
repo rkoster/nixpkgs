@@ -47,9 +47,6 @@ jobs:
       - name: Install devenv
         run: nix profile install nixpkgs#devenv nixpkgs#skopeo
 
-      - name: Build container image
-        run: devenv container build workspace
-
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -71,22 +68,17 @@ jobs:
             echo "is_pr=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Push container to GHCR
+      - name: Build and push container to GHCR
         run: |
           TAG="${{ steps.tag.outputs.tag }}"
           
-          # Push with devenv (container name becomes the image name)
-          # --registry should be registry/owner, not registry/owner/image
-          devenv container \
-            --registry docker://${{ env.REGISTRY }}/${{ github.repository_owner }} \
-            copy workspace
+          # Build outputs a JSON file with the image
+          IMAGE_JSON=$(devenv container build workspace | grep /nix/store | grep image-workspace.json)
           
-          # If we need a different tag, use skopeo to retag
-          if [ "$TAG" != "workspace" ]; then
-            skopeo copy \
-              docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:workspace \
-              docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$TAG
-          fi
+          # Use skopeo to push directly with the desired tag
+          skopeo copy \
+            "nix:$IMAGE_JSON" \
+            "docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$TAG"
 
       - name: Output image details
         run: |
