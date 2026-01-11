@@ -72,17 +72,24 @@ jobs:
         run: |
           TAG="${{ steps.tag.outputs.tag }}"
           
-          # Build the container image with devenv
-          echo "Building workspace container..."
-          IMAGE_JSON=$(devenv container build workspace | grep -o '/nix/store/.*-image-workspace\.json')
-          echo "Built image: $IMAGE_JSON"
+          # Use devenv container copy to build and push in one step
+          # The --registry flag specifies the registry URL (must end with /)
+          # devenv will push to: <registry>/<container-name>:<container-name>
+          # So this pushes to: ghcr.io/rkoster/workspace:workspace
+          echo "Building and pushing workspace container..."
+          devenv container \
+            --registry "docker://${{ env.REGISTRY }}/${{ github.repository_owner }}/" \
+            copy workspace
           
-          # Use skopeo to copy from oci format to docker registry
-          # The devenv-built container is in OCI format in the nix store
-          echo "Pushing to ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$TAG..."
-          skopeo copy \
-            "oci:$(dirname $IMAGE_JSON):workspace" \
-            "docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$TAG"
+          # Retag the image if we need a different tag than 'workspace'
+          # For PRs: use branch name as tag
+          # For master: use 'latest' as tag
+          if [[ "$TAG" != "workspace" ]]; then
+            echo "Retagging to ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$TAG..."
+            skopeo copy \
+              "docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:workspace" \
+              "docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$TAG"
+          fi
 
       - name: Output image details
         run: |

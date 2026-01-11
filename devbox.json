@@ -1,1 +1,28 @@
-../_context/repos/rkoster/nixpkgs/devbox.json
+{
+  "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/main/.schema/devbox.schema.json",
+  "packages": [
+    "devenv@latest"
+  ],
+  "shell": {
+    "init_hook": [
+      "echo 'Welcome to the nixpkgs development environment!'"
+    ],
+    "scripts": {
+      "rebuild": [
+        "darwin-rebuild switch"
+      ],
+      "update": [
+        "nix flake update"
+      ],
+      "check": [
+        "nix flake check"
+      ],
+      "dry-run": [
+        "darwin-rebuild switch --dry-run"
+      ]
+    }
+  },
+  "nixpkgs": {
+    "commit": "45a1530683263666f42d1de4cdda328109d5a676"
+  }
+}
