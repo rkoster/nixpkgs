@@ -74,23 +74,20 @@ jobs:
           
           # Build the container image
           echo "Building workspace container..."
-          devenv container build workspace
+          IMAGE_JSON=$(devenv container build workspace)
+          echo "Built image: $IMAGE_JSON"
           
-          # The build creates a tarball that we can load and push
-          # Find the container tarball in the nix store
-          IMAGE_TARBALL=$(nix-store -qR $(devenv container build workspace) | grep '\.tar\.gz$' || true)
+          # Use devenv container copy to push to registry
+          # Note: devenv uses the container name as the tag by default
+          devenv container --registry docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} copy workspace
           
-          if [ -z "$IMAGE_TARBALL" ]; then
-            echo "Error: Could not find container tarball"
-            exit 1
+          # If we need a different tag than 'workspace', retag it
+          if [ "$TAG" != "workspace" ]; then
+            echo "Retagging from workspace to $TAG..."
+            skopeo copy \
+              "docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:workspace" \
+              "docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$TAG"
           fi
-          
-          echo "Found container tarball: $IMAGE_TARBALL"
-          
-          # Use skopeo to push directly from the tarball
-          skopeo copy \
-            "docker-archive:$IMAGE_TARBALL" \
-            "docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$TAG"
 
       - name: Output image details
         run: |
