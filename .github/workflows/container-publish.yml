@@ -71,23 +71,35 @@ jobs:
       - name: Build and push container to GHCR
         run: |
           TAG="${{ steps.tag.outputs.tag }}"
+          IS_PR="${{ steps.tag.outputs.is_pr }}"
+          DEST="docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$TAG"
           
-          # Use devenv container copy to build and push in one step
-          # The --registry flag specifies the registry URL (must end with /)
-          # devenv pushes to: <registry>/<container-name>:latest
-          # So this pushes to: ghcr.io/rkoster/workspace:latest
-          echo "Building and pushing workspace container..."
-          devenv container \
-            --registry "docker://${{ env.REGISTRY }}/${{ github.repository_owner }}/" \
-            copy workspace
+          # Build the container image
+          echo "Building workspace container..."
+          IMAGE_JSON=$(devenv container build workspace | grep -o '/nix/store/.*-image-workspace\.json')
+          echo "Built image: $IMAGE_JSON"
           
-          # For PRs, also tag with the branch name
-          # devenv always pushes as :latest, so we retag from :latest
-          if [[ "$TAG" != "latest" ]]; then
-            echo "Retagging to ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$TAG..."
-            skopeo copy \
-              "docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" \
-              "docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$TAG"
+          # The image JSON has a copyToRegistry script in the same directory
+          COPY_SCRIPT="$(dirname $IMAGE_JSON)/copyToRegistry"
+          
+          if [[ -x "$COPY_SCRIPT" ]]; then
+            # Use nix2container's copyToRegistry script for direct push to specific tag
+            echo "Pushing to $DEST using copyToRegistry..."
+            $COPY_SCRIPT $DEST
+          else
+            # Fallback: use devenv container copy (pushes to :latest)
+            echo "copyToRegistry not found, using devenv container copy..."
+            devenv container \
+              --registry "docker://${{ env.REGISTRY }}/${{ github.repository_owner }}/" \
+              copy workspace
+            
+            # Retag if not pushing to latest
+            if [[ "$TAG" != "latest" ]]; then
+              echo "Retagging from :latest to :$TAG..."
+              skopeo copy \
+                "docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" \
+                "$DEST"
+            fi
           fi
 
       - name: Output image details
