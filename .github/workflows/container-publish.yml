@@ -74,20 +74,19 @@ jobs:
           
           # Use devenv container copy to build and push in one step
           # The --registry flag specifies the registry URL (must end with /)
-          # devenv will push to: <registry>/<container-name>:<container-name>
-          # So this pushes to: ghcr.io/rkoster/workspace:workspace
+          # devenv pushes to: <registry>/<container-name>:latest
+          # So this pushes to: ghcr.io/rkoster/workspace:latest
           echo "Building and pushing workspace container..."
           devenv container \
             --registry "docker://${{ env.REGISTRY }}/${{ github.repository_owner }}/" \
             copy workspace
           
-          # Retag the image if we need a different tag than 'workspace'
-          # For PRs: use branch name as tag
-          # For master: use 'latest' as tag
-          if [[ "$TAG" != "workspace" ]]; then
+          # For PRs, also tag with the branch name
+          # devenv always pushes as :latest, so we retag from :latest
+          if [[ "$TAG" != "latest" ]]; then
             echo "Retagging to ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$TAG..."
             skopeo copy \
-              "docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:workspace" \
+              "docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" \
               "docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$TAG"
           fi
 
