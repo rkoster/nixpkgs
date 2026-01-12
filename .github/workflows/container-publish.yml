@@ -71,13 +71,22 @@ jobs:
           IMAGE_FULL="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$TAG"
           
           echo "Building workspace container image..."
-          nix build .#workspace-image --print-build-logs
+          nix build .#workspace-image.copyToRegistry --print-build-logs
           
-          echo "Pushing to docker://${IMAGE_FULL}..."
-          # nix2container creates a script that streams the image
-          # The result symlink points to this script
-          # Pipe it to skopeo to push to registry
-          ./result | skopeo copy docker-archive:/dev/stdin "docker://${IMAGE_FULL}"
+          # The copyToRegistry script pushes with tag 'latest' by default
+          # We need to override the destination if using a different tag
+          if [ "$TAG" != "latest" ]; then
+            echo "Copying image to docker://${IMAGE_FULL}..."
+            # Use skopeo to copy from the default tag to our desired tag
+            ./result/bin/copy-to-registry
+            # Now retag from latest to our desired tag
+            skopeo copy \
+              "docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" \
+              "docker://${IMAGE_FULL}"
+          else
+            echo "Pushing to docker://${IMAGE_FULL}..."
+            ./result/bin/copy-to-registry
+          fi
 
       - name: Output image details
         run: |
