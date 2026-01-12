@@ -29,6 +29,11 @@ in
   };
   initContent =
     ''
+    # Source nix profile (for container environments)
+    if [ -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' ]; then
+      . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
+    fi
+    
     # Add ~/.opencode/bin to PATH to override nix-installed opencode
     export PATH="$HOME/.opencode/bin:$PATH"
     

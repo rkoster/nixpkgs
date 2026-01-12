@@ -232,23 +232,9 @@
                   cp -rL ${hmActivation}/home-files/. $out${containerHome}/ || true
                 fi
                 
-                # Ensure proper ownership markers (will be applied at runtime)
-                # Create .profile to source nix
-                cat > $out${containerHome}/.profile << 'EOF'
-                if [ -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' ]; then
-                  . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
-                fi
-                export PATH="$HOME/.nix-profile/bin:$PATH"
-                EOF
-                
-                # Create .zshenv
-                cat > $out${containerHome}/.zshenv << 'EOF'
-                export ZDOTDIR="$HOME"
-                if [ -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' ]; then
-                  . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
-                fi
-                export PATH="$HOME/.nix-profile/bin:$PATH"
-                EOF
+                # Set permissions to ensure files are writable in the container
+                # (will be owned by the container user at runtime)
+                chmod -R u+w $out${containerHome} || true
               '';
 
             in {
