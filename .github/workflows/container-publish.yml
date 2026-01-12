@@ -74,7 +74,18 @@ jobs:
           nix build .#workspace-image.copyToRegistry --print-build-logs
           
           echo "Pushing to $DEST..."
-          ./result "$DEST"
+          # Find and execute the copy script (handle both direct script and bin/ directory)
+          if [ -x ./result ]; then
+            ./result "$DEST"
+          elif [ -x ./result/bin/copy-to-registry ]; then
+            ./result/bin/copy-to-registry "$DEST"
+          elif [ -f ./result ]; then
+            bash ./result "$DEST"
+          else
+            echo "Error: Could not find executable copy script in ./result"
+            ls -la ./result
+            exit 1
+          fi
 
       - name: Output image details
         run: |
