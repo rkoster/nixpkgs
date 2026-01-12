@@ -68,33 +68,16 @@ jobs:
       - name: Build and push container to GHCR
         run: |
           TAG="${{ steps.tag.outputs.tag }}"
-          DEST="docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$TAG"
+          IMAGE_FULL="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$TAG"
           
           echo "Building workspace container image..."
-          nix build .#workspace-image.copyToRegistry --print-build-logs
+          nix build .#workspace-image --print-build-logs
           
-          echo "Pushing to $DEST..."
-          # Find and execute the copy script (handle directory or direct script)
-          if [ -d ./result ]; then
-            # Result is a directory - look for bin/copy-to-registry
-            if [ -x ./result/bin/copy-to-registry ]; then
-              ./result/bin/copy-to-registry "$DEST"
-            else
-              echo "Error: ./result is a directory but does not contain executable bin/copy-to-registry"
-              ls -la ./result ./result/bin/ 2>/dev/null || true
-              exit 1
-            fi
-          elif [ -x ./result ]; then
-            # Result is an executable file
-            ./result "$DEST"
-          elif [ -f ./result ]; then
-            # Result is a non-executable script file
-            bash ./result "$DEST"
-          else
-            echo "Error: Could not find executable copy script in ./result"
-            ls -la ./result
-            exit 1
-          fi
+          echo "Pushing to docker://${IMAGE_FULL}..."
+          # nix2container creates a script that streams the image
+          # The result symlink points to this script
+          # Pipe it to skopeo to push to registry
+          ./result | skopeo copy docker-archive:/dev/stdin "docker://${IMAGE_FULL}"
 
       - name: Output image details
         run: |
