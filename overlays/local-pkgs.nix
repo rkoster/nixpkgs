@@ -55,16 +55,16 @@ self: super:
   # Uses Go 1.25 and patches go.mod to accept 1.25.0 (upstream requires 1.25.1)
   ibosh = (super.buildGoModule.override { go = super.go_1_25; }) rec {
     pname = "ibosh";
-    version = "0.2.0";
+    version = "0.3";
 
     src = super.fetchFromGitHub {
       owner = "rkoster";
       repo = "instant-bosh";
-      rev = "56d3f34a0e79c8942ffee43afd559a2407e5d53d";
-      sha256 = "sha256-sBh/3Yzcj+AoRKbO3sKnqwP0PTkuvwaOSumEJ+JD86I=";
+      rev = "8d9e97f211b2688550c6f9eca31a8f522d96366d";
+      sha256 = "sha256-7o1pRwFeVL31/53PnziTGV9trJ5RehtGb7j/as1xNGs=";
     };
 
-    vendorHash = "sha256-qj5MBQySJ6dSMcwP90iThNfEK5OxOGbq+e9Mofe6M5A=";
+    vendorHash = "sha256-joic7YHo/fVxAlVxUchfppCQFAFZ5DngBIKlNlfKK28=";
 
     # Patch go.mod to accept Go 1.25.0 instead of requiring 1.25.1
     postPatch = ''
