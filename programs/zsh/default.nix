@@ -27,14 +27,33 @@ in
     share = true;
     size = 1000000000;
   };
+  # envExtra runs in .zshenv before .zshrc - ensures PATH is set early
+  envExtra = ''
+    # Bootstrap PATH for container environments where coreutils aren't in default PATH
+    # This must run before hm-session-vars.sh which uses 'id' command
+    if [ -e "$HOME/.nix-profile/bin" ]; then
+      export PATH="$HOME/.nix-profile/bin:$PATH"
+    fi
+    if [ -e '/nix/var/nix/profiles/default/bin' ]; then
+      export PATH="/nix/var/nix/profiles/default/bin:$PATH"
+    fi
+  '';
   initContent =
     ''
+    # Source nix profile (for container environments)
+    if [ -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' ]; then
+      . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
+    fi
+    
     # Add ~/.opencode/bin to PATH to override nix-installed opencode
     export PATH="$HOME/.opencode/bin:$PATH"
     
     export XDG_CONFIG_HOME=${config.xdg.configHome}
     export XDG_RUNTIME_DIR="$HOME/Library/Caches/TemporaryItems"
-    export EMACS_SOCKET_NAME="emacs-$(tmux display-message -p '#{window_id}' | tr -d @)-server"
+    # Only set EMACS_SOCKET_NAME if we're in tmux and commands are available
+    if command -v tmux >/dev/null 2>&1 && [ -n "$TMUX" ]; then
+      export EMACS_SOCKET_NAME="emacs-$(tmux display-message -p '#{window_id}' | tr -d @)-server"
+    fi
 
     if [ -e "$HOME/.nix-defexpr/channels" ]; then
       export NIX_PATH="$HOME/.nix-defexpr/channels''${NIX_PATH:+:$NIX_PATH}"
@@ -94,8 +113,8 @@ in
     #     | xargs -L1 shepherd delete lease --namespace official
     # '';
     nix-update = nixUpdateCommand;
-    nix-flake-update =''
+    nix-flake-update = ''
       nix --extra-experimental-features flakes flake update --flake ~/.config/nixpkgs/
-      '';
+    '';
   };
 }

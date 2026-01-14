@@ -8,8 +8,17 @@ on:
       - 'programs/**'
       - 'pkgs/**'
       - 'overlays/**'
-      - 'devenv.nix'
-      - 'devenv.yaml'
+      - 'flake.nix'
+      - 'flake.lock'
+      - '.github/workflows/container-publish.yml'
+  pull_request:
+    paths:
+      - 'roles/linux-container/**'
+      - 'programs/**'
+      - 'pkgs/**'
+      - 'overlays/**'
+      - 'flake.nix'
+      - 'flake.lock'
       - '.github/workflows/container-publish.yml'
   workflow_dispatch:
 
@@ -35,12 +44,6 @@ jobs:
           extra_nix_config: |
             experimental-features = nix-command flakes
 
-      - name: Install devenv
-        run: nix profile install nixpkgs#devenv
-
-      - name: Build container image
-        run: devenv container build workspace
-
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -48,27 +51,67 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Push container to GHCR
+      - name: Determine container tag
+        id: tag
         run: |
-          devenv container \
-            --registry docker://${{ env.REGISTRY }}/${{ github.repository_owner }}/ \
-            copy workspace
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            # For PRs, use the branch name as tag
+            TAG=$(echo "${{ github.head_ref }}" | sed 's/[^a-zA-Z0-9._-]/-/g')
+            echo "tag=$TAG" >> $GITHUB_OUTPUT
+            echo "is_pr=true" >> $GITHUB_OUTPUT
+          else
+            # For master pushes, use 'latest' tag
+            echo "tag=latest" >> $GITHUB_OUTPUT
+            echo "is_pr=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build and push container to GHCR
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          IMAGE_FULL="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$TAG"
+          
+          echo "Building workspace container image..."
+          nix build .#workspace-image.copyToRegistry --print-build-logs
+          
+          # The copyToRegistry script pushes with tag 'latest' by default
+          # We need to override the destination if using a different tag
+          if [ "$TAG" != "latest" ]; then
+            echo "Copying image to docker://${IMAGE_FULL}..."
+            # Use skopeo to copy from the default tag to our desired tag
+            ./result/bin/copy-to-registry
+            # Now retag from latest to our desired tag
+            skopeo copy \
+              "docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" \
+              "docker://${IMAGE_FULL}"
+          else
+            echo "Pushing to docker://${IMAGE_FULL}..."
+            ./result/bin/copy-to-registry
+          fi
 
       - name: Output image details
         run: |
-          echo "## Container Published ✅" >> $GITHUB_STEP_SUMMARY
+          IMAGE_TAG="${{ steps.tag.outputs.tag }}"
+          IMAGE_FULL="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG}"
+          
+          echo "## Container Published" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Image**: \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Image**: \`${IMAGE_FULL}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "${{ steps.tag.outputs.is_pr }}" == "true" ]]; then
+            echo "> This is a PR build. The image is tagged with the branch name and will not update the \`latest\` tag." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+          
           echo "### Usage" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
           echo "# Using Incus" >> $GITHUB_STEP_SUMMARY
-          echo "incus launch ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest my-workspace" >> $GITHUB_STEP_SUMMARY
+          echo "incus launch oci-ghcr:rkoster/workspace:${IMAGE_TAG} my-workspace --network incusbr0" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "# Using Docker/Podman" >> $GITHUB_STEP_SUMMARY
-          echo "docker run -it ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
+          echo "docker run -it ${IMAGE_FULL}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "# Inspect with skopeo" >> $GITHUB_STEP_SUMMARY
-          echo "skopeo inspect docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
+          echo "skopeo inspect docker://${IMAGE_FULL}" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,41 @@
+# Start incus workspace container if not running, then open in new Ghost window
+if ! incus info workspace &>/dev/null; then
+  echo "Launching workspace"
+  incus launch oci-ghcr:rkoster/workspace:latest workspace --network incusbr0
+  
+  # Wait for container to be ready
+  echo "Waiting for container to be ready..."
+  sleep 2
+
+  # Push non-nix-managed config files/directories to the container
+  # Excludes: nix store symlinks, sockets, colima (VM disk images)
+  echo "Pushing config files..."
+  
+  for item in $HOME/.config/*; do
+    name=${item##*/}
+    
+    # Skip symlinks to nix store
+    if [ -L "$item" ] && [[ "$(readlink "$item")" == /nix/store/* ]]; then
+      continue
+    fi
+    
+    # Skip excluded directories
+    case "$name" in
+      colima) continue ;;
+    esac
+    
+    if [ -d "$item" ]; then
+      # Create directory and push contents using incus file push
+      # Use -p to create parent directories, -r for recursive
+      incus file push -p -r "$item" workspace/home/ruben/.config/ 2>/dev/null
+    elif [ -f "$item" ]; then
+      incus file push -p "$item" workspace/home/ruben/.config/"$name" 2>/dev/null
+    fi
+  done
+
+elif [ "$(incus info workspace | grep '^Status:' | awk '{print $2}')" != "RUNNING" ]; then
+  echo "Starting workspace"
+  incus start workspace
+fi
+
+ghostty --wait-after-command --command="incus exec workspace -- /bin/sh -c 'for p in /nix/store/*-home-manager-path/bin; do export PATH=\"\$p:\$PATH\"; break; done; TERM=xterm-256color exec tmux new-session -A -s main'" &>/dev/null &
