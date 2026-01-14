@@ -41,6 +41,7 @@ in {
     devbox
     gnutar
     gnupg
+    yubikey-manager
     retry
     dive
 
