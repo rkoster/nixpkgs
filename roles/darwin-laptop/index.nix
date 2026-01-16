@@ -77,6 +77,7 @@ in {
     # smith
     # shepherd
     # sheepctl
+    uaa-cli
     om
     bosh-bootloader
     ytt
